@@ -1,38 +1,8 @@
-﻿import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Zap, ArrowRight, FileText } from "lucide-react";
 const EASE = [0.16, 1, 0.3, 1] as const;
 const HERO_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_215831_c6a8989c-d716-4d8d-8745-e972a2eec711.mp4";
-function useMouseScrub(containerRef: React.RefObject<HTMLDivElement | null>, videoRef: React.RefObject<HTMLVideoElement | null>) {
-  useEffect(() => {
-    const container = containerRef.current;
-    const video = videoRef.current;
-    if (!container || !video) return;
-    let rafId: number | null = null;
-    const onMouseMove = (e: MouseEvent) => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        if (!video.duration || video.readyState < 2) return;
-        if (!video.paused) video.pause(); // Pause autoplay during scrub
-        const rect = container.getBoundingClientRect();
-        const mouseX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-        const progress = mouseX / rect.width;
-        video.currentTime = progress * video.duration;
-      });
-    };
-    const onMouseLeave = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      if (video) video.play().catch(() => {});
-    };
-    container.addEventListener("mousemove", onMouseMove);
-    container.addEventListener("mouseleave", onMouseLeave);
-    return () => {
-      container.removeEventListener("mousemove", onMouseMove);
-      container.removeEventListener("mouseleave", onMouseLeave);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [containerRef, videoRef]);
-}
 const css = `
 .nx-hero {
   position: relative;
@@ -75,9 +45,7 @@ const css = `
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s;
 }
-.nx-menu:hover { opacity: 0.9; }
 .nx-menu span.c {
   width: 22px;
   height: 22px;
@@ -113,9 +81,7 @@ const css = `
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: opacity 0.2s;
 }
-.nx-admin:hover { opacity: 0.9; }
 .nx-video-container {
   position: absolute;
   top: 0;
@@ -124,19 +90,20 @@ const css = `
   height: 100%;
   z-index: 1;
   overflow: hidden;
-  cursor: pointer;
+  cursor: crosshair;
 }
-.nx-video-container video {
+.nx-video-container video,
+.nx-video-container canvas {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center right;
-  pointer-events: none;
+  display: block;
 }
 .nx-video-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, #fafafa 0%, rgba(250,250,250,0.6) 20%, transparent 70%);
+  background: linear-gradient(to right, #fafafa 0%, rgba(250,250,250,0.4) 25%, transparent 70%);
   z-index: 2;
   pointer-events: none;
 }
@@ -188,12 +155,9 @@ const css = `
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
 }
 .nx-btn.p { background: #111; color: #fff; border: 1px solid #111; }
-.nx-btn.p:hover { background: #222; transform: translateY(-1px); }
 .nx-btn.s { background: #fff; color: #111; border: 1px solid #e5e5e5; }
-.nx-btn.s:hover { background: #f5f5f5; border-color: #ccc; }
 .nx-tags { display: flex; gap: 8px; flex-wrap: wrap; }
 .nx-tags span {
   background: rgba(255, 255, 255, 0.9);
@@ -247,26 +211,104 @@ export function Header({ onAdmin }: { onSubmit?: () => void; onTrack?: () => voi
 }
 export function Hero({ onSubmit, onTrack }: { onSubmit: () => void; onTrack?: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  useMouseScrub(containerRef, videoRef);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(() => {});
-    }
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!video || !canvas || !container) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let frames: ImageBitmap[] = [];
+    let isExtracting = false;
+    // Build frame cache for instant scrubbing
+    const extractFrames = async () => {
+      if (isExtracting || !video.duration) return;
+      isExtracting = true;
+      const frameCount = 30; // Pre-render 30 keyframes
+      const newFrames: ImageBitmap[] = [];
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 360;
+      for (let i = 0; i < frameCount; i++) {
+        video.currentTime = (i / frameCount) * video.duration;
+        await new Promise((resolve) => {
+          const onSeeked = () => {
+            video.removeEventListener("seeked", onSeeked);
+            resolve(true);
+          };
+          video.addEventListener("seeked", onSeeked);
+        });
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const bitmap = await createImageBitmap(canvas);
+        newFrames.push(bitmap);
+      }
+      frames = newFrames;
+      isExtracting = false;
+    };
+    video.addEventListener("loadeddata", extractFrames);
+    const onMouseMove = (e: MouseEvent) => {
+      if (frames.length === 0) return;
+      setIsScrubbing(true);
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const frameIndex = Math.min(
+        Math.floor((x / rect.width) * frames.length),
+        frames.length - 1
+      );
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(frames[frameIndex], 0, 0);
+    };
+    const onMouseLeave = () => {
+      setIsScrubbing(false);
+      video.play().catch(() => {});
+    };
+    container.addEventListener("mousemove", onMouseMove);
+    container.addEventListener("mouseleave", onMouseLeave);
+    return () => {
+      container.removeEventListener("mousemove", onMouseMove);
+      container.removeEventListener("mouseleave", onMouseLeave);
+      video.removeEventListener("loadeddata", extractFrames);
+    };
   }, []);
   return (
     <section id="top" className="nx-hero">
       <style>{css}</style>
       <div ref={containerRef} className="nx-video-container">
         <div className="nx-video-overlay" />
-        <video ref={videoRef} src={HERO_VIDEO_URL} poster="/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" />
+        <canvas
+          ref={canvasRef}
+          style={{ display: isScrubbing ? "block" : "none" }}
+        />
+        <video
+          ref={videoRef}
+          src={HERO_VIDEO_URL}
+          poster="/hero-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          style={{ display: isScrubbing ? "none" : "block" }}
+        />
       </div>
-      <motion.div className="nx-hero-content" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.7, ease: EASE }}>
+      <motion.div
+        className="nx-hero-content"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: EASE }}
+      >
         <div>
-          <div className="nx-pill"><i />National Level Research &amp; Paper Presentation 2026</div>
-          <h1 className="nx-h1">2nd National Conference<br />Advanced Trends in Engineering.</h1>
+          <div className="nx-pill">
+            <i />
+            National Level Research &amp; Paper Presentation 2026
+          </div>
+          <h1 className="nx-h1">
+            2nd National Conference
+            <br />
+            Advanced Trends in Engineering.
+          </h1>
           <div className="nx-btns">
             <button className="nx-btn p" onClick={onSubmit}>
               Submit Paper <ArrowRight size={16} />
