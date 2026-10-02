@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleAiValidationRequest } from "./server/ai-validation-middleware";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -47,6 +48,14 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (url.pathname.includes("/__l5e/assets-v1/") || url.pathname.includes("ncatex-hero-web.webm")) {
+        return Response.redirect(new URL("/hero-video.mp4", request.url), 302);
+      }
+
+      const aiResponse = await handleAiValidationRequest(request);
+      if (aiResponse) return aiResponse;
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

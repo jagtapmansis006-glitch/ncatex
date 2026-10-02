@@ -1,92 +1,135 @@
-import { useRef, useState } from "react";
-import { motion, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
-import { Brain, Cpu, Radio, Wifi, Activity } from "lucide-react";
+import { motion } from "framer-motion";
+import { Brain, Cpu, Radio, Wifi, Activity, ArrowUpRight } from "lucide-react";
 
 export const TRACKS = [
-  { name: "AI/ML", icon: Brain, desc: "Deep learning, edge AI, neural accelerators and intelligent systems." },
-  { name: "VLSI", icon: Cpu, desc: "Low-power design, FPGA, ASIC flows and semiconductor innovation." },
-  { name: "5G Communication", icon: Radio, desc: "mmWave, massive MIMO, network slicing and beyond-5G research." },
-  { name: "IoT", icon: Wifi, desc: "Sensor networks, embedded systems and connected infrastructure." },
-  { name: "Signal Processing", icon: Activity, desc: "Audio, image, biomedical and radar signal analysis." },
+  {
+    id: "01",
+    name: "AI/ML",
+    fullName: "Artificial Intelligence & Machine Learning",
+    icon: Brain,
+    desc: "Deep learning architectures, edge AI acceleration, cognitive intelligence, and autonomous decision systems.",
+    tags: ["Neural Networks", "Edge AI", "Computer Vision"],
+  },
+  {
+    id: "02",
+    name: "VLSI",
+    fullName: "VLSI & Embedded Systems",
+    icon: Cpu,
+    desc: "Low-power semiconductor design, FPGA synthesis, nanoscale ASIC architectures, and hardware security.",
+    tags: ["28nm/7nm Flows", "RISC-V", "SoC Design"],
+  },
+  {
+    id: "03",
+    name: "5G Communication",
+    fullName: "5G & Wireless Networks",
+    icon: Radio,
+    desc: "mmWave propagation, massive MIMO beamforming, network slicing protocols, and beyond-5G communication.",
+    tags: ["Beamforming", "Network Slicing", "Terahertz"],
+  },
+  {
+    id: "04",
+    name: "IoT",
+    fullName: "IoT & Smart Sensors",
+    icon: Wifi,
+    desc: "Long-range sensor networks, industrial IoT telemetry, mesh topologies, and cyber-physical security.",
+    tags: ["LoRaWAN", "Edge Sensing", "Industrial IoT"],
+  },
+  {
+    id: "05",
+    name: "Signal Processing",
+    fullName: "Signal & Image Processing",
+    icon: Activity,
+    desc: "Biomedical telemetry, multimodal signal decomposition, radar array processing, and audio compression.",
+    tags: ["Biomedical DSP", "Radar Array", "Wavelet Transform"],
+  },
 ];
 
-function FloatSquare({ p, i }: { p: MotionValue<number>; i: number }) {
-  const range = (i % 2 ? 1 : -1) * (60 + i * 25);
-  const y = useSpring(useTransform(p, [0, 1], [0, range]), { stiffness: 80, damping: 20 });
-  const rot = useTransform(p, [0, 1], [0, i * 30]);
-  const size = 10 + (i % 4) * 8;
-  return (
-    <motion.div style={{ y, rotate: rot, width: size, height: size, left: `${8 + i * 11}%`, top: `${15 + ((i * 37) % 70)}%` }} className="absolute bg-ink" />
-  );
+interface TracksProps {
+  onSelectTrack?: (trackName: string) => void;
 }
 
-function Magnet({ mx, my, i }: { mx: MotionValue<number>; my: MotionValue<number>; i: number }) {
-  const base = { x: 20 + ((i * 53) % 70), y: 15 + ((i * 31) % 60) };
-  const x = useSpring(useTransform(mx, (v) => (v - base.x) * 0.25), { stiffness: 150, damping: 15 });
-  const y = useSpring(useTransform(my, (v) => (v - base.y) * 0.25), { stiffness: 150, damping: 15 });
-  return <motion.span style={{ x, y, left: `${base.x}%`, top: `${base.y}%` }} className="absolute h-2 w-2 bg-ink/70 group-hover:bg-paper" />;
-}
-
-function TrackCard({ t, idx }: { t: (typeof TRACKS)[number]; idx: number }) {
-  const [hover, setHover] = useState(false);
-  const mx = useMotionValue(50);
-  const my = useMotionValue(50);
-  const Icon = t.icon;
+export function Tracks({ onSelectTrack }: TracksProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: idx * 0.08 }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => { setHover(false); mx.set(50); my.set(50); }}
-      onMouseMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        mx.set(((e.clientX - r.left) / r.width) * 100);
-        my.set(((e.clientY - r.top) / r.height) * 100);
-      }}
-      className="group relative h-72 overflow-hidden border border-ink bg-card p-6"
-    >
-      <div className="pointer-events-none absolute inset-0 grid grid-cols-12 grid-rows-8">
-        {Array.from({ length: 96 }).map((_, k) => {
-          const row = Math.floor(k / 12), col = k % 12;
+    <section id="tracks" className="mx-auto max-w-7xl px-4 sm:px-6 py-24">
+      {/* Section Header */}
+      <div className="mb-14">
+        <span className="inline-block rounded-full bg-teal-500/10 dark:bg-teal-500/15 border border-teal-500/20 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-teal-800 dark:text-teal-300">
+          Call for Papers 2026
+        </span>
+        <h2 className="mt-3.5 text-4xl font-light tracking-tight text-slate-900 dark:text-white font-display md:text-5xl">
+          Five Tracks.{" "}
+          <span className="font-semibold text-slate-900 dark:text-white">One Frontier.</span>
+        </h2>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-400">
+          Explore the five core technical domains of NCATEX 2026. Submit your original scholarly
+          research for peer review and indexed publication.
+        </p>
+      </div>
+
+      {/* Standardized Cards Grid (Sections 01-05) */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {TRACKS.map((t, idx) => {
+          const Icon = t.icon;
           return (
-            <motion.div key={k} className="bg-ink/80" initial={false}
-              animate={{ scale: hover ? 1 : 0, opacity: hover ? 1 : 0 }}
-              transition={{ duration: 0.25, delay: (row + col) * 0.018 }} />
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.08, duration: 0.6 }}
+              whileHover={{ scale: 1.02, y: -6 }}
+              onClick={() => onSelectTrack?.(t.fullName)}
+              className="group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-7 shadow-sm transition-all duration-300 hover:border-teal-500/40 dark:hover:border-teal-500/40 hover:shadow-xl dark:hover:shadow-teal-500/5 cursor-pointer overflow-hidden"
+            >
+              {/* Subtle top border accent glow on hover */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+              <div>
+                {/* Card Top: Number pill & Icon */}
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 px-3 py-1 font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200 group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600">
+                    {t.id}
+                  </span>
+                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 transition-all duration-300 group-hover:bg-teal-600 group-hover:text-white group-hover:rotate-6">
+                    <Icon size={20} />
+                  </div>
+                </div>
+
+                {/* Title & Description with clean typography */}
+                <h3 className="mt-6 text-xl font-bold tracking-tight text-slate-900 dark:text-white font-display">
+                  {t.name}
+                </h3>
+                <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  {t.desc}
+                </p>
+              </div>
+
+              {/* Card Footer: Sub-tags & Submit prompt */}
+              <div className="mt-6 flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-5">
+                <div className="flex flex-wrap gap-1.5">
+                  {t.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-lg bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 transition-colors duration-200 group-hover:bg-slate-200 dark:group-hover:bg-white/10"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal-600 dark:text-teal-400 transition-all duration-200 group-hover:translate-x-0.5">
+                  Submit{" "}
+                  <ArrowUpRight
+                    size={13}
+                    className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                  />
+                </span>
+              </div>
+            </motion.div>
           );
         })}
-      </div>
-      <div className="pointer-events-none absolute inset-0">
-        {Array.from({ length: 6 }).map((_, i) => <Magnet key={i} mx={mx} my={my} i={i + idx} />)}
-      </div>
-      <div className="relative flex h-full flex-col justify-between transition-colors duration-300 group-hover:text-paper">
-        <div className="flex items-start justify-between">
-          <span className="text-xs tracking-widest text-muted-foreground group-hover:text-paper/60">0{idx + 1}</span>
-          <Icon className="h-6 w-6" />
-        </div>
-        <div>
-          <h3 className="font-display text-2xl font-medium tracking-tight">{t.name}</h3>
-          <p className="mt-2 text-sm font-light text-muted-foreground group-hover:text-paper/80">{t.desc}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-export function Tracks() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  return (
-    <section id="tracks" className="mx-auto max-w-7xl px-6 py-28">
-      <div ref={ref} className="relative mb-16 py-10">
-        {Array.from({ length: 8 }).map((_, i) => <FloatSquare key={i} p={scrollYProgress} i={i} />)}
-        <p className="relative text-xs uppercase tracking-[0.3em] text-muted-foreground">Call for papers</p>
-        <h2 className="relative mt-3 max-w-3xl font-display text-5xl font-medium tracking-tighter md:text-7xl">Five tracks. One frontier.</h2>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {TRACKS.map((t, i) => <TrackCard key={t.name} t={t} idx={i} />)}
       </div>
     </section>
   );
 }
+
+export default Tracks;
