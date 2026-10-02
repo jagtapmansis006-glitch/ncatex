@@ -3,35 +3,35 @@ import { motion } from "framer-motion";
 import { Plus, Zap, ArrowRight, FileText } from "lucide-react";
 const EASE = [0.16, 1, 0.3, 1] as const;
 const HERO_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_215831_c6a8989c-d716-4d8d-8745-e972a2eec711.mp4";
-function useMouseScrub(videoRef: React.RefObject<HTMLVideoElement | null>) {
+function useMouseScrub(containerRef: React.RefObject<HTMLDivElement | null>, videoRef: React.RefObject<HTMLVideoElement | null>) {
   useEffect(() => {
-    if (typeof window === "undefined" || window.matchMedia("(pointer: coarse)").matches) return;
-    let lastX: number | null = null;
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container || !video) return;
     let rafId: number | null = null;
-    const onMove = (e: MouseEvent) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        if (videoRef.current && videoRef.current.readyState >= 2) {
-          const v = videoRef.current;
-          if (!v.duration) return;
-          if (lastX === null) {
-            lastX = e.clientX;
-            return;
-          }
-          const delta = e.clientX - lastX;
-          lastX = e.clientX;
-          let t = v.currentTime + (delta / window.innerWidth) * 0.6 * v.duration;
-          t = ((t % v.duration) + v.duration) % v.duration;
-          v.currentTime = t;
-        }
+        if (!video.duration || video.readyState < 2) return;
+        if (!video.paused) video.pause(); // Pause autoplay during scrub
+        const rect = container.getBoundingClientRect();
+        const mouseX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const progress = mouseX / rect.width;
+        video.currentTime = progress * video.duration;
       });
     };
-    window.addEventListener("mousemove", onMove);
+    const onMouseLeave = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (video) video.play().catch(() => {});
+    };
+    container.addEventListener("mousemove", onMouseMove);
+    container.addEventListener("mouseleave", onMouseLeave);
     return () => {
-      window.removeEventListener("mousemove", onMove);
+      container.removeEventListener("mousemove", onMouseMove);
+      container.removeEventListener("mouseleave", onMouseLeave);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [videoRef]);
+  }, [containerRef, videoRef]);
 }
 const css = `
 .nx-hero {
@@ -116,7 +116,6 @@ const css = `
   transition: opacity 0.2s;
 }
 .nx-admin:hover { opacity: 0.9; }
-/* Video Positioning - Right Side Only */
 .nx-video-container {
   position: absolute;
   top: 0;
@@ -124,22 +123,23 @@ const css = `
   width: 50%;
   height: 100%;
   z-index: 1;
-  pointer-events: none;
   overflow: hidden;
+  cursor: pointer;
 }
 .nx-video-container video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center right;
+  pointer-events: none;
 }
 .nx-video-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(to right, #fafafa 0%, rgba(250,250,250,0.6) 20%, transparent 70%);
   z-index: 2;
+  pointer-events: none;
 }
-/* Hero Body Section */
 .nx-hero-content {
   position: relative;
   z-index: 10;
@@ -152,7 +152,9 @@ const css = `
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  pointer-events: none;
 }
+.nx-hero-content > * { pointer-events: auto; }
 .nx-pill {
   display: inline-flex;
   align-items: center;
@@ -244,8 +246,9 @@ export function Header({ onAdmin }: { onSubmit?: () => void; onTrack?: () => voi
   );
 }
 export function Hero({ onSubmit, onTrack }: { onSubmit: () => void; onTrack?: () => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  useMouseScrub(videoRef);
+  useMouseScrub(containerRef, videoRef);
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.defaultMuted = true;
@@ -256,11 +259,11 @@ export function Hero({ onSubmit, onTrack }: { onSubmit: () => void; onTrack?: ()
   return (
     <section id="top" className="nx-hero">
       <style>{css}</style>
-      <div className="nx-video-container">
+      <div ref={containerRef} className="nx-video-container">
         <div className="nx-video-overlay" />
         <video ref={videoRef} src={HERO_VIDEO_URL} poster="/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" />
       </div>
-      <div className="nx-hero-content">
+      <motion.div className="nx-hero-content" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.7, ease: EASE }}>
         <div>
           <div className="nx-pill"><i />National Level Research &amp; Paper Presentation 2026</div>
           <h1 className="nx-h1">2nd National Conference<br />Advanced Trends in Engineering.</h1>
@@ -278,7 +281,7 @@ export function Hero({ onSubmit, onTrack }: { onSubmit: () => void; onTrack?: ()
           <span>VLSI</span>
           <span>5G &amp; IoT</span>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
