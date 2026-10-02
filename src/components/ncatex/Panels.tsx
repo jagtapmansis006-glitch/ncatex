@@ -34,7 +34,7 @@ export function SubmitModal({ papers, onClose, onTrack }: { papers: Paper[]; onC
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const id = nextId(papers);
-    savePapers([...papers, { id, ...f, tracks: sel, fileName: file?.name, status: "Submitted", submittedAt: new Date().toISOString().slice(0, 10) }]);
+    savePapers([...papers, { id, ...f, tracks: sel, fileName: file?.name ?? "", status: "Submitted", submittedAt: new Date().toISOString().slice(0, 10) }]);
     setDone(id);
   };
 

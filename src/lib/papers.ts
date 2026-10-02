@@ -37,7 +37,7 @@ export function savePapers(p: Paper[]) {
 }
 
 export function nextId(p: Paper[]) {
-  const max = p.reduce((m, x) => Math.max(m, parseInt(x.id.split("-")[1]) || 0), 103);
+  const max = p.reduce((m, x) => Math.max(m, parseInt(x.id.split("-")[1] ?? "0") || 0), 103);
   return `NCATEX-${max + 1}`;
 }
 
