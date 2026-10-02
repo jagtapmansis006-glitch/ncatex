@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the hero video as a project asset pointer to a browser-compatible WebM, so the mouse scrub loads reliably in Chromium.

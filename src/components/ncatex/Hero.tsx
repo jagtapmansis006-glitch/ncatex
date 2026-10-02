@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Zap } from "lucide-react";
+import heroVideo from "@/assets/ncatex-hero.asset.json";
 
-const VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260601_110537_3a579fa0-7bbc-4d94-9d25-0e816c7840f5.mp4";
+const VIDEO = heroVideo.url;
 
 function useTypewriter(text: string, speed = 40) {
   const [out, setOut] = useState("");

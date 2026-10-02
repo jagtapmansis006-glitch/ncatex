@@ -13,6 +13,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "2nd National Conference on Advanced Trends in Electronics & Telecommunication Engineering. Submit and track your paper." },
       { property: "og:title", content: "NCATEX 2026 — Electronics & Telecom Conference" },
       { property: "og:description", content: "Submit papers across AI/ML, VLSI, 5G, IoT and Signal Processing tracks." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
