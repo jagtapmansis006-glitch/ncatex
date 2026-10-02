@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "8ee7bf73-476f-4090-94a6-882f2d12c128",
+  "asset_id": "50c3620b-d17f-4e5d-865d-c14a36b28fca",
   "project_id": "66caf86a-6bf6-484b-aade-19543d6eddb7",
-  "url": "/__l5e/assets-v1/8ee7bf73-476f-4090-94a6-882f2d12c128/ncatex-hero.mp4",
-  "r2_key": "a/v1/66caf86a-6bf6-484b-aade-19543d6eddb7/8ee7bf73-476f-4090-94a6-882f2d12c128/ncatex-hero.mp4",
-  "original_filename": "ncatex-hero.mp4",
-  "size": 3714600,
+  "url": "/__l5e/assets-v1/50c3620b-d17f-4e5d-865d-c14a36b28fca/ncatex-hero-web.mp4",
+  "r2_key": "a/v1/66caf86a-6bf6-484b-aade-19543d6eddb7/50c3620b-d17f-4e5d-865d-c14a36b28fca/ncatex-hero-web.mp4",
+  "original_filename": "ncatex-hero-web.mp4",
+  "size": 174543,
   "content_type": "video/mp4",
-  "created_at": "2026-10-02T11:09:16Z"
+  "created_at": "2026-10-02T11:09:59Z"
 }
