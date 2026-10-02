@@ -51,7 +51,7 @@ function Index() {
   return (
     <div className="min-h-screen">
       <Header onSubmit={() => setModal("submit")} onTrack={() => { setTrackId(""); setModal("track"); }} onAdmin={() => setModal("admin")} />
-      <Hero onSubmit={() => setModal("submit")} />
+      <Hero onSubmit={() => setModal("submit")} onTrack={() => { setTrackId(""); setModal("track"); }} />
 
       <section id="about" className="mx-auto grid max-w-7xl gap-12 px-6 py-28 md:grid-cols-2">
         <h2 className="font-display text-5xl font-medium tracking-tighter">About the conference</h2>
