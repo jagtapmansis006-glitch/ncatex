@@ -33,7 +33,7 @@ export function loadPapers(): Paper[] {
 
 export function savePapers(p: Paper[]) {
   localStorage.setItem(KEY, JSON.stringify(p));
-  window.dispatchEvent(new Event(EVT));
+  window.dispatchEvent(new CustomEvent(EVT, { detail: p }));
 }
 
 export function nextId(p: Paper[]) {

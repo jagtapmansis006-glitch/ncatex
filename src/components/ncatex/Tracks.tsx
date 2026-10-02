@@ -52,7 +52,7 @@ function TrackCard({ t, idx }: { t: (typeof TRACKS)[number]; idx: number }) {
           const row = Math.floor(k / 12), col = k % 12;
           return (
             <motion.div key={k} className="bg-ink/80" initial={false}
-              animate={{ scale: hover ? 1 : 0 }}
+              animate={{ scale: hover ? 1 : 0, opacity: hover ? 1 : 0 }}
               transition={{ duration: 0.25, delay: (row + col) * 0.018 }} />
           );
         })}
