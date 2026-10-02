@@ -1,32 +1,36 @@
-import { useEffect, useRef } from "react";
-import { motion } from "motion/react";
+﻿import { useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Plus, Zap } from "lucide-react";
-import heroVideo from "@/assets/ncatex-hero-bw.asset.json";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const INK = "#000";
 
-function useMouseScrub(ref: React.RefObject<HTMLVideoElement | null>) {
+function useMouseScrub(videoRef: React.RefObject<HTMLVideoElement | null>) {
   useEffect(() => {
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (typeof window === "undefined" || window.matchMedia("(pointer: coarse)").matches) return;
     let lastX: number | null = null;
     const onMove = (e: MouseEvent) => {
-      const v = ref.current;
-      if (!v || !v.duration) return;
-      if (lastX === null) { lastX = e.clientX; return; }
-      const delta = e.clientX - lastX;
-      lastX = e.clientX;
-      let t = v.currentTime + (delta / window.innerWidth) * 0.8 * v.duration;
-      t = ((t % v.duration) + v.duration) % v.duration;
-      v.currentTime = t;
+      if (videoRef.current && videoRef.current.readyState >= 2) {
+        const v = videoRef.current;
+        if (!v.duration) return;
+        if (lastX === null) {
+          lastX = e.clientX;
+          return;
+        }
+        const delta = e.clientX - lastX;
+        lastX = e.clientX;
+        let t = v.currentTime + (delta / window.innerWidth) * 0.8 * v.duration;
+        t = ((t % v.duration) + v.duration) % v.duration;
+        v.currentTime = t;
+      }
     };
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, [ref]);
+  }, [videoRef]);
 }
 
 const css = `
-.nx-hero{position:relative;min-height:100vh;background:#fff;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;font-family:Inter,sans-serif;color:${INK}}
+.nx-hero{position:relative;min-height:100vh;background:#eceef1 radial-gradient(circle at 50% 40%, #ffffff 0%, #edf0f5 55%, #e2e6eb 100%);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;font-family:Inter,sans-serif;color:${INK}}
 .nx-nav{position:fixed;top:0;left:0;right:0;z-index:50;pointer-events:none;display:flex;justify-content:space-between;align-items:center;padding:16px 20px}
 .nx-nav > *{pointer-events:auto}
 .nx-left,.nx-right{display:flex;align-items:center;gap:8px}
@@ -39,9 +43,8 @@ const css = `
 .nx-portal button.c{width:26px;height:26px;border-radius:50%;background:#000;border:0;display:grid;place-items:center;cursor:pointer}
 .nx-portal .lbl{display:none;padding-right:10px}
 .nx-admin{position:absolute;top:calc(100% + 8px);right:0;display:flex;align-items:center;gap:4px;white-space:nowrap;background:#000;color:#fff;border:0;border-radius:999px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit}
-.nx-video{position:absolute;z-index:0;left:10%;top:10%;width:80%;height:80%}
-.nx-video video{width:100%;height:100%;object-fit:cover;display:block}
-.nx-foot{position:relative;z-index:30;margin-top:auto;padding:120px 20px 28px;background:linear-gradient(to top,#ffffff 0%,rgba(255,255,255,0.8) 50%,transparent 100%);display:flex;flex-direction:column;gap:24px}
+.nx-video{position:absolute;z-index:0;inset:0;width:100%;height:100%;background:#eceef1 url('/hero-poster.jpg') center/cover no-repeat}
+.nx-foot{position:relative;z-index:30;margin-top:auto;padding:120px 20px 28px;background:linear-gradient(to top,#ffffff 0%,rgba(255,255,255,0.85) 50%,transparent 100%);display:flex;flex-direction:column;gap:24px}
 .nx-sub{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(0,0,0,.55)}
 .nx-sub i{width:8px;height:8px;border-radius:50%;background:#000;display:inline-block}
 .nx-h1{font-weight:300;font-size:clamp(2rem,8vw,4.5rem);letter-spacing:-0.03em;line-height:1;margin:14px 0 22px}
@@ -56,7 +59,6 @@ const css = `
  .nx-brand{display:inline}
  .nx-gray{display:flex}
  .nx-portal .lbl{display:inline}
- .nx-video{left:0;top:0;width:100%;height:100%}
  .nx-foot{flex-direction:row;justify-content:space-between;align-items:flex-end;padding:140px 32px 36px}
  .nx-h1{font-size:clamp(2.5rem,5.5vw,4.5rem)}
 }
@@ -81,7 +83,12 @@ function Grid() {
 
 export function Header({ onAdmin }: { onSubmit?: () => void; onTrack?: () => void; onAdmin: () => void }) {
   return (
-    <motion.nav className="nx-nav" initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, ease: EASE }}>
+    <motion.nav
+      className="nx-nav"
+      initial={{ y: -16, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.8, ease: EASE }}
+    >
       <div className="nx-left">
         <a href="#top" className="nx-logo"><Logo /><span className="nx-brand">NCATEX 2026</span></a>
         <button className="nx-menu" onClick={() => document.getElementById("tracks")?.scrollIntoView({ behavior: "smooth" })}>
@@ -101,30 +108,93 @@ export function Header({ onAdmin }: { onSubmit?: () => void; onTrack?: () => voi
 }
 
 export function Hero({ onSubmit, onTrack }: { onSubmit: () => void; onTrack?: () => void }) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useMouseScrub(ref);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useMouseScrub(videoRef);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("Autoplay postponed by browser policy:", err);
+        });
+      }
+    }
+  }, []);
+
   const up = (y: number, delay: number) => ({
     initial: { y, opacity: 0 },
     animate: { y: 0, opacity: 1 },
     transition: { duration: 0.8, delay, ease: EASE },
   });
+
   return (
-    <section id="top" className="nx-hero">
-      <style>{css}</style>
-      <motion.div className="nx-video" initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.8, ease: EASE }}>
-        <video ref={ref} src={heroVideo.url} autoPlay muted playsInline loop preload="auto" />
-      </motion.div>
-      <motion.div className="nx-foot" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.5, ease: EASE }}>
-        <div>
-          <motion.div className="nx-sub" {...up(16, 0.6)}><i />National Level Research &amp; Paper Presentation 2026</motion.div>
-          <motion.h1 className="nx-h1" {...up(20, 0.8)}>2nd National Conference<br />Advanced Trends in Engineering.</motion.h1>
-          <motion.div className="nx-btns" {...up(16, 1.0)}>
-            <button className="nx-btn p" onClick={onSubmit}>Submit Paper</button>
-            <button className="nx-btn s" onClick={onTrack}>Track Paper</button>
-          </motion.div>
-        </div>
-        <div className="nx-tags"><span>AI/ML</span><span>VLSI</span><span>5G &amp; IoT</span></div>
-      </motion.div>
-    </section>
+    <AnimatePresence mode="wait">
+      <section id="top" className="nx-hero">
+        <style>{css}</style>
+        <motion.div
+          className="nx-video"
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.8, ease: EASE }}
+        >
+          <video
+            ref={videoRef}
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_215831_c6a8989c-d716-4d8d-8745-e972a2eec711.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/hero-poster.jpg"
+            className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+          />
+        </motion.div>
+        <motion.div
+          className="nx-foot"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 1, delay: 0.5, ease: EASE }}
+        >
+          <div>
+            <motion.div className="nx-sub" {...up(16, 0.6)}>
+              <i />National Level Research &amp; Paper Presentation 2026
+            </motion.div>
+            <motion.h1 className="nx-h1" {...up(20, 0.8)}>
+              2nd National Conference<br />Advanced Trends in Engineering.
+            </motion.h1>
+            <motion.div className="nx-btns" {...up(16, 1.0)}>
+              <motion.button
+                className="nx-btn p"
+                onClick={onSubmit}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.0, ease: EASE }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Submit Paper
+              </motion.button>
+              <motion.button
+                className="nx-btn s"
+                onClick={onTrack}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.1, ease: EASE }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Track Paper
+              </motion.button>
+            </motion.div>
+          </div>
+          <div className="nx-tags">
+            <span>AI/ML</span><span>VLSI</span><span>5G &amp; IoT</span>
+          </div>
+        </motion.div>
+      </section>
+    </AnimatePresence>
   );
 }

@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Header, Hero } from "@/components/ncatex/Hero";
 import { Tracks } from "@/components/ncatex/Tracks";
 import { AdminPanel, SubmitModal, TrackModal } from "@/components/ncatex/Panels";
@@ -9,9 +9,9 @@ import { loadPapers, PAPERS_EVENT, type Paper } from "@/lib/papers";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "NCATEX 2026 — National Conference on Electronics & Telecom" },
+      { title: "NCATEX 2026 – National Conference on Electronics & Telecom" },
       { name: "description", content: "2nd National Conference on Advanced Trends in Electronics & Telecommunication Engineering. Submit and track your paper." },
-      { property: "og:title", content: "NCATEX 2026 — Electronics & Telecom Conference" },
+      { property: "og:title", content: "NCATEX 2026 – Electronics & Telecom Conference" },
       { property: "og:description", content: "Submit papers across AI/ML, VLSI, 5G, IoT and Signal Processing tracks." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -30,7 +30,7 @@ const DATES = [
 const FAQ = [
   ["Who can submit?", "Students, researchers, faculty and industry professionals working in electronics and telecommunication."],
   ["What format is required?", "IEEE double-column format, max 6 pages, submitted as PDF."],
-  ["Is there a registration fee?", "Yes — fees apply after acceptance, with concessions for students."],
+  ["Is there a registration fee?", "Yes – fees apply after acceptance, with concessions for students."],
   ["Will papers be published?", "Accepted and presented papers will be considered for indexed proceedings."],
 ];
 const SPONSORS = ["IEEE", "Scopus", "Springer", "Codecraft", "AlphaWave"];
@@ -109,7 +109,7 @@ function Index() {
             ))}
           </div>
         </div>
-        <p className="mt-12 text-center text-sm text-muted-foreground">© 2026 NCATEX ✵ All rights reserved.</p>
+        <p className="mt-12 text-center text-sm text-muted-foreground">© 2026 NCATEX • All rights reserved.</p>
       </footer>
 
       <AnimatePresence>
