@@ -79,7 +79,7 @@ export function Tracks({ onSelectTrack }: TracksProps) {
               transition={{ delay: idx * 0.08, duration: 0.6 }}
               whileHover={{ scale: 1.02, y: -6 }}
               onClick={() => onSelectTrack?.(t.fullName)}
-              className="group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-7 shadow-sm transition-all duration-300 hover:border-teal-500/40 dark:hover:border-teal-500/40 hover:shadow-xl dark:hover:shadow-teal-500/5 cursor-pointer overflow-hidden"
+              className="group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-7 shadow-sm transition-all duration-300 hover:border-teal-500/40 dark:hover:border-teal-500/40 hover:-translate-y-1 hover:shadow-[0_0_40px_-8px_rgba(20,184,166,0.45)] cursor-pointer overflow-hidden"
             >
               {/* Subtle top border accent glow on hover */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
