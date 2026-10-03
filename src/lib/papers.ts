@@ -9,6 +9,7 @@ export type Paper = {
   abstract: string;
   tracks: string[];
   fileName?: string;
+  fileUrl?: string | undefined;
   status: PaperStatus;
   submittedAt: string;
 };

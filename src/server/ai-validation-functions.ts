@@ -27,6 +27,20 @@ export interface PaperSubmissionPayload {
   preValidatedResult?: StudentValidationResult | undefined;
 }
 
+export interface AdminTriagePayload {
+  paperId?: string | undefined;
+  paperTitle: string;
+  authorName: string;
+  department?: string | undefined;
+  track?: string | undefined;
+  abstract: string;
+  fullText?: string | undefined;
+  fileBase64?: string | undefined;
+  documentFilename?: string | undefined;
+  documentMimeType?: string | undefined;
+  apiKey?: string | undefined;
+}
+
 export interface PaperSubmissionResult {
   success: boolean;
   saved: boolean;
@@ -191,7 +205,7 @@ export async function submitPaperHandler(
   // If column 'pdf_url' is not found in schema cache, retry without 'pdf_url' key
   if (dbError && dbError.message?.includes("pdf_url")) {
     console.warn("Retrying database insert without 'pdf_url' column due to schema cache: ", dbError.message);
-    delete insertPayload.pdf_url;
+    delete insertPayload["pdf_url"];
     const retry = await supabase
       .from("papers")
       .insert([insertPayload])
