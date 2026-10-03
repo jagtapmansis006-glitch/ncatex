@@ -235,7 +235,7 @@ export function SubmitModal({
       // Retry without pdf_url if column not present in schema cache
       if (insertError && insertError.message?.includes("pdf_url")) {
         console.warn("Retrying database insert without 'pdf_url' column due to schema cache: ", insertError.message);
-        delete insertPayload.pdf_url;
+        delete insertPayload["pdf_url"];
         const retryResult = await supabase
           .from("papers")
           .insert([insertPayload]);

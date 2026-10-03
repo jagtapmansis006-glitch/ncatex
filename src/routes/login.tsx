@@ -1,8 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-<<<<<<< HEAD
-import { Mail, Lock, ArrowLeft } from "lucide-react";
-=======
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -17,88 +14,27 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { ThemeToggle } from "@/context/ThemeContext";
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
+import { setStoredUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-<<<<<<< HEAD
-      { title: "Sign In – NCATEX 2026 Portal" },
-      { name: "description", content: "Sign in to the NCATEX 2026 portal as a student author or an admin / reviewer." },
-      { property: "og:title", content: "Sign In – NCATEX 2026 Portal" },
-      { property: "og:description", content: "Student and admin / reviewer access to the NCATEX 2026 conference portal." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-=======
       { title: "NCATEX 2026 – Conference Portal Login" },
       {
         name: "description",
         content:
           "Sign in to the NCATEX 2026 Student Submission or Academic Reviewer Portal.",
       },
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
+      { property: "og:title", content: "NCATEX 2026 – Conference Portal Login" },
+      { property: "og:description", content: "Student and admin / reviewer access to the NCATEX 2026 conference portal." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LoginPage,
 });
 
-<<<<<<< HEAD
-function LoginPage() {
-  const [tab, setTab] = useState<"student" | "admin">("student");
-  const navigate = useNavigate();
-  const field =
-    "w-full rounded-xl border border-white/15 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-teal-400";
-  return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-[#090D16] px-4 text-white">
-      <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-teal-500/30 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl" />
-      <div className="relative w-full max-w-md">
-        <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white">
-          <ArrowLeft size={14} /> Back to NCATEX 2026
-        </Link>
-        <div className="rounded-3xl border border-white/15 bg-white/[0.06] p-8 shadow-2xl backdrop-blur-2xl">
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="mt-1 text-sm text-white/60">Sign in to the NCATEX 2026 portal.</p>
-          <div className="mt-6 grid grid-cols-2 rounded-xl bg-white/5 p-1">
-            {(["student", "admin"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`rounded-lg py-2 text-sm font-semibold transition-colors ${tab === t ? "bg-teal-500 text-slate-950" : "text-white/70 hover:text-white"}`}
-              >
-                {t === "student" ? "Student Login" : "Admin / Reviewer Login"}
-              </button>
-            ))}
-          </div>
-          <form
-            className="mt-6 space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void navigate({ to: tab === "admin" ? "/admin" : "/" });
-            }}
-          >
-            <label className="relative block">
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-              <input type="email" required placeholder="Email address" className={field} />
-            </label>
-            <label className="relative block">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-              <input type="password" required placeholder="Password" className={field} />
-            </label>
-            <button type="submit" className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-slate-950 hover:bg-teal-400">
-              Sign In
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
-=======
 const EASE = [0.16, 1, 0.3, 1] as const;
-
-import { setStoredUser } from "@/lib/auth";
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/[0.03] px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 outline-none transition focus:border-teal-500 focus:bg-white dark:focus:border-teal-500 dark:focus:bg-white/[0.06]";
@@ -207,31 +143,22 @@ function LoginPage() {
           <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mb-6 text-xs font-semibold">
             <button
               type="button"
-              onClick={() => {
-                setTab("student");
-                setEmail("");
-                setPassword("");
-              }}
-              className={`relative py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 ${
+              onClick={() => setTab("student")}
+              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all ${
                 tab === "student"
-                  ? "bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-sm font-bold"
+                  ? "bg-white dark:bg-teal-500 text-slate-900 dark:text-black shadow-sm font-bold"
                   : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <GraduationCap size={14} />
-              <span>Student Login</span>
+              <span>Student / Author</span>
             </button>
-
             <button
               type="button"
-              onClick={() => {
-                setTab("admin");
-                setEmail("");
-                setPassword("");
-              }}
-              className={`relative py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 ${
+              onClick={() => setTab("admin")}
+              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all ${
                 tab === "admin"
-                  ? "bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-sm font-bold"
+                  ? "bg-white dark:bg-teal-500 text-slate-900 dark:text-black shadow-sm font-bold"
                   : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -240,117 +167,99 @@ function LoginPage() {
             </button>
           </div>
 
-          {/* Sign In Form */}
+          {/* Form */}
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
-              <label
-                htmlFor="login-email"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-white/60 mb-1.5"
-              >
-                Institutional / Academic Email
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                {tab === "student" ? "Student Registration Email" : "Admin / Reviewer Email"}
               </label>
               <div className="relative">
                 <input
-                  id="login-email"
                   type="email"
                   required
-                  placeholder={
-                    tab === "student" ? "author@university.edu" : "reviewer@ncatex.edu"
-                  }
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`${inputClass} pl-10`}
+                  placeholder={tab === "student" ? "scholar@university.edu" : "admin@ncatex.edu"}
+                  className={inputClass}
                 />
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500">
-                  <Mail size={15} />
-                </div>
+                <Mail size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/40" />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label
-                  htmlFor="login-password"
-                  className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-white/60"
-                >
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Password
                 </label>
                 <a
                   href="#forgot"
                   onClick={(e) => {
                     e.preventDefault();
-                    alert("Password reset is managed by the NCATEX Academic Secretariat.");
+                    alert("Please contact the NCATEX secretariat at support@ncatex.edu for password resets.");
                   }}
                   className="text-[11px] text-teal-600 dark:text-teal-400 hover:underline"
                 >
-                  Forgot password?
+                  Forgot?
                 </a>
               </div>
               <div className="relative">
                 <input
-                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   required
-                  placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`${inputClass} pl-10 pr-10`}
+                  placeholder="••••••••••••"
+                  className={inputClass}
                 />
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500">
-                  <Lock size={15} />
-                </div>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white"
+                  aria-label="Toggle password visibility"
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
 
-            {/* Remember Me Checkbox */}
-            <div className="flex items-center gap-2 pt-0.5">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 dark:border-slate-700 dark:bg-white/5 cursor-pointer"
-              />
-              <label
-                htmlFor="remember"
-                className="text-xs text-slate-600 dark:text-white/70 cursor-pointer select-none"
-              >
-                Keep me signed in on this workstation
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-white/70">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-slate-300 dark:border-white/20 text-teal-500 focus:ring-teal-400"
+                />
+                <span>Remember session</span>
               </label>
+              <span className="text-[11px] font-mono text-slate-400 dark:text-white/40">
+                NCATEX 2026 Auth
+              </span>
             </div>
 
-            {/* "Sign In" Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-black py-3 text-xs font-semibold uppercase tracking-wider transition hover:opacity-90 shadow flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-[#0b0c10] py-3 text-xs font-bold uppercase tracking-wider shadow-md hover:opacity-90 active:scale-[0.98] transition disabled:opacity-50 mt-2 cursor-pointer"
             >
               {loading ? (
                 <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  <span>Signing In...</span>
+                  <RefreshCw size={14} className="animate-spin text-teal-500" />
+                  <span>Authenticating Session...</span>
                 </>
               ) : (
                 <>
-                  <span>Sign In as {tab === "student" ? "Author" : "Reviewer"}</span>
-                  <ArrowRight size={13} />
+                  <span>Sign In to {tab === "student" ? "Author Portal" : "Admin Panel"}</span>
+                  <ArrowRight size={14} />
                 </>
               )}
             </button>
           </form>
 
-          {/* Quick Mock Testing Pre-fill Badges */}
+          {/* Quick Credential Test Helper for Reviewers */}
           <div className="mt-6 pt-5 border-t border-slate-100 dark:border-white/5">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500 text-center mb-2.5">
-              Demo Credentials &amp; Quick Mock
+            <p className="text-[11px] font-semibold text-slate-400 dark:text-white/40 text-center mb-2">
+              Quick One-Click Demo Access
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -366,7 +275,6 @@ function LoginPage() {
                   student@ncatex.edu
                 </p>
               </button>
-
               <button
                 type="button"
                 onClick={() => handleQuickFill("admin")}
@@ -394,4 +302,3 @@ function LoginPage() {
 }
 
 export default LoginPage;
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)

@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-<<<<<<< HEAD
-import { Hero } from "@/components/ncatex/Hero";
-import { SiteNav, LandingHero, QuickInfoBar, useNow } from "@/components/ncatex/Landing";
-import { Tracks } from "@/components/ncatex/Tracks";
-=======
 import {
   Calendar,
   MapPin,
@@ -16,14 +11,12 @@ import {
   CheckCircle2,
   ChevronDown,
   ArrowRight,
-  BookOpen,
 } from "lucide-react";
 import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
 import { Hero } from "@/components/hero/Hero";
 import { Tracks } from "@/components/common/Tracks";
 import { SubmitModal, TrackModal } from "@/components/common/Panels";
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,14 +39,6 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-<<<<<<< HEAD
-const DATES: [string, string, string][] = [
-  ["2026-01-15", "Jan 15, 2026", "Call for papers opens"],
-  ["2026-02-20", "Feb 20, 2026", "Paper submission deadline"],
-  ["2026-03-05", "Mar 05, 2026", "Peer review & acceptance notification"],
-  ["2026-03-15", "Mar 15, 2026", "Camera-ready manuscript submission"],
-  ["2026-03-27", "Mar 27–28, 2026", "Official conference sessions"],
-=======
 const QUICK_INFO_ITEMS = [
   {
     icon: Calendar,
@@ -85,7 +70,6 @@ const QUICK_INFO_ITEMS = [
     value: "Indexed Proceedings",
     detail: "IEEE & Scopus Standards",
   },
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
 ];
 
 const TIMELINE_MILESTONES = [
@@ -162,8 +146,6 @@ function Index() {
   const [selectedTrack, setSelectedTrack] = useState<string | undefined>(undefined);
   const [trackInitialQuery, setTrackInitialQuery] = useState<string>("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const now = useNow();
-  const nextDeadline = DATES.find(([iso]) => new Date(iso).getTime() >= now)?.[0];
 
   const handleOpenSubmit = (track?: string) => {
     if (track) setSelectedTrack(track);
@@ -181,32 +163,20 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
-<<<<<<< HEAD
-      <SiteNav onSubmit={() => handleOpenSubmit()} />
-      <LandingHero onSubmit={() => handleOpenSubmit()} />
-      <QuickInfoBar />
-=======
       {/* Sticky Top Navigation Bar matching exact dark theme palette */}
       <Navbar
         onSubmit={() => handleOpenSubmit()}
         onTrack={() => handleOpenTrack()}
       />
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
 
       {/* Submission & tracking modals (logic preserved from Hero) */}
       <Hero
-<<<<<<< HEAD
-        modalsOnly
-        activeModal={activeModal}
-        onModalChange={setActiveModal}
-=======
         isSubmitModalOpen={isSubmitModalOpen}
         setIsSubmitModalOpen={setIsSubmitModalOpen}
         isTrackModalOpen={isTrackModalOpen}
         setIsTrackModalOpen={setIsTrackModalOpen}
         onOpenSubmit={handleOpenSubmit}
         onOpenTrack={handleOpenTrack}
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
         prefilledTrack={selectedTrack}
         onSubmit={() => handleOpenSubmit()}
         onTrack={() => handleOpenTrack()}
@@ -214,10 +184,6 @@ function Index() {
 
       {/* Compact Quick Info Bar below Hero */}
       <section
-<<<<<<< HEAD
-        id="overview"
-        className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 py-24 md:grid-cols-2"
-=======
         id="quick-info"
         className="mx-auto max-w-7xl px-4 sm:px-6 -mt-6 sm:-mt-10 mb-16 relative z-20"
       >
@@ -258,7 +224,6 @@ function Index() {
       <section
         id="overview"
         className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 py-20 md:grid-cols-2 scroll-mt-20"
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
       >
         <div>
           <span className="inline-block rounded-full bg-teal-500/10 dark:bg-teal-500/15 border border-teal-500/20 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-teal-800 dark:text-teal-300">
@@ -323,43 +288,6 @@ function Index() {
             </p>
           </div>
 
-<<<<<<< HEAD
-          <ol className="relative ml-3 border-l border-white/15">
-            {DATES.map(([iso, d, l], i) => {
-              const isNext = iso === nextDeadline;
-              const past = new Date(iso).getTime() < now;
-              return (
-                <motion.li
-                  key={iso}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.06, duration: 0.5 }}
-                  className="relative pb-10 pl-8 last:pb-0"
-                >
-                  <span
-                    className={`absolute -left-[9px] top-1 h-4 w-4 rounded-full border-2 ${
-                      isNext
-                        ? "border-teal-300 bg-teal-400 shadow-[0_0_0_6px_rgba(45,212,191,0.2)]"
-                        : past
-                          ? "border-white/40 bg-white/40"
-                          : "border-white/30 bg-slate-900"
-                    }`}
-                  />
-                  <div className={`rounded-xl p-4 ${isNext ? "border border-teal-400/40 bg-teal-400/10" : ""}`}>
-                    <p className="font-mono text-sm font-semibold text-teal-300">{d}</p>
-                    <p className={`mt-1 text-base ${past ? "text-white/50" : "text-white"}`}>{l}</p>
-                    {isNext && (
-                      <span className="mt-2 inline-block rounded-full bg-teal-400 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-900">
-                        Next deadline
-                      </span>
-                    )}
-                  </div>
-                </motion.li>
-              );
-            })}
-          </ol>
-=======
           {/* Visual Connected Timeline */}
           <div className="relative pl-6 sm:pl-8 border-l-2 border-teal-500/30 space-y-8 ml-3 sm:ml-4">
             {TIMELINE_MILESTONES.map((item, idx) => {
@@ -457,7 +385,6 @@ function Index() {
               );
             })}
           </div>
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
         </div>
       </section>
 

@@ -31,18 +31,6 @@ import {
   Layers,
   BookOpen,
   Sparkles,
-<<<<<<< HEAD
-  ExternalLink,
-  LayoutDashboard,
-  Users,
-  UserCheck,
-  ClipboardCheck,
-  Award,
-  Settings,
-  PanelLeftOpen,
-  PanelLeftClose,
-  LogOut,
-=======
   SlidersHorizontal,
   Plus,
   Trash2,
@@ -53,7 +41,7 @@ import {
   Activity,
   AlertTriangle,
   Award,
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
+
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -74,6 +62,7 @@ import type { AdminTriageResult } from "@/services/ai-validation/types";
 import { AdminSidebar, type AdminTab } from "@/components/admin/AdminSidebar";
 import { AdminCharts } from "@/components/admin/AdminCharts";
 import { AdminDiagnostics } from "@/components/admin/AdminDiagnostics";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -211,6 +200,7 @@ const STATUS_COLORS = {
 };
 
 function AdminControlCenter() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [papers, setPapers] = useState<PaperRecord[]>([]);
@@ -274,17 +264,13 @@ function AdminControlCenter() {
     setIsMounted(true);
   }, []);
 
-<<<<<<< HEAD
-  // Dropdown navigation state
-  const [portalMenuOpen, setPortalMenuOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pdfPreview, setPdfPreview] = useState<{ url: string; title: string } | null>(null);
-=======
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
+
 
   // Fetch papers & profiles from Supabase live
   const fetchSubmissions = async (isManualRefresh = false) => {
@@ -475,7 +461,7 @@ function AdminControlCenter() {
         name: shortName,
         fullName: trackName,
         count,
-        fill: TRACK_COLORS[idx % TRACK_COLORS.length],
+        fill: TRACK_COLORS[idx % TRACK_COLORS.length] ?? "#3B82F6",
       };
     });
   }, [papers]);
@@ -620,28 +606,6 @@ function AdminControlCenter() {
   ];
 
   return (
-<<<<<<< HEAD
-    <div className="dark flex min-h-screen bg-[#090D16] text-[#f1f5f9] font-sans antialiased">
-      <AdminSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />
-      <div className="min-w-0 flex-1">
-      {/* Top Admin Navbar with Sticky Glass Blur */}
-      <header
-        className={`sticky top-0 z-40 border-b transition-all duration-300 backdrop-blur-xl ${
-          isScrolled
-            ? "border-slate-200/90 dark:border-[#1f2430] bg-white/90 dark:bg-[#0b0d14]/90 shadow-sm dark:shadow-black/20"
-            : "border-slate-200/60 dark:border-[#1f2430] bg-white/80 dark:bg-[#0b0d14]/80"
-        }`}
-      >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100/80 dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-white/80 transition-all hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white active:scale-95"
-            >
-              <ArrowLeft size={13} />
-              <span>Back to Conference</span>
-            </Link>
-=======
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#08090d] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans transition-colors duration-200">
       {/* =========================================================================
           ESSENTIAL 5-TAB COLLAPSIBLE CONTROL CENTER SIDEBAR
@@ -658,7 +622,7 @@ function AdminControlCenter() {
           window.location.href = "/";
         }}
       />
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
+
 
       {/* =========================================================================
           MAIN CONTROL CENTER VIEW AREA
@@ -765,330 +729,7 @@ function AdminControlCenter() {
                 totalPapers={papers.length}
                 onViewAllProblemSubmissions={() => setActiveTab("participants")}
               />
-<<<<<<< HEAD
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-white/40 dark:hover:text-white"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
 
-            {/* Track Filter Select */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-white/50 whitespace-nowrap hidden sm:inline font-medium">
-                Track:
-              </span>
-              <select
-                value={selectedTrackFilter}
-                onChange={(e) => setSelectedTrackFilter(e.target.value)}
-                className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#141721] px-3.5 py-2.5 text-xs text-slate-800 dark:text-white/90 outline-none transition-colors hover:border-slate-300 dark:hover:border-white/20 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-              >
-                {TRACK_FILTER_OPTIONS.map((track) => (
-                  <option
-                    key={track}
-                    value={track}
-                    className="bg-white dark:bg-[#141721] text-slate-900 dark:text-white"
-                  >
-                    {track}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Status Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100 dark:border-white/5">
-            <span className="text-[11px] text-slate-400 dark:text-white/40 mr-1.5 flex items-center gap-1 font-medium">
-              <SlidersHorizontal size={11} /> Filter:
-            </span>
-            {[
-              { id: "ALL", label: `All (${papers.length})` },
-              { id: "UNDER_REVIEW", label: `Under Review (${metrics.underReview})` },
-              { id: "ACCEPTED", label: `Accepted (${metrics.accepted})` },
-              { id: "REVISION", label: `Revision (${metrics.revision})` },
-              { id: "REJECTED", label: `Rejected (${metrics.rejected})` },
-            ].map((tab) => {
-              const active = selectedStatusFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setSelectedStatusFilter(tab.id)}
-                  className={`relative rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                    active
-                      ? "bg-teal-600 text-white shadow-sm font-semibold dark:bg-white dark:text-[#0b0c10]"
-                      : "text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Papers Table Card */}
-        <section className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] shadow-sm dark:shadow-lg overflow-hidden transition-colors duration-200">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <RefreshCw size={26} className="animate-spin text-teal-600 dark:text-teal-400 mb-3" />
-              <p className="text-sm font-medium text-slate-700 dark:text-white/70">
-                Connecting to Supabase registry...
-              </p>
-              <p className="text-xs text-slate-400 dark:text-white/40 mt-1">
-                Retrieving author manuscripts and review states
-              </p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-              <AlertCircle size={32} className="text-rose-500 mb-3" />
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                Database Query Failed
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-white/60 max-w-md mt-1 mb-4">
-                {error}
-              </p>
-              <button
-                type="button"
-                onClick={() => fetchSubmissions()}
-                className="rounded-xl bg-teal-500/10 border border-teal-500/30 px-4 py-2 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-500/20"
-              >
-                Retry Connection
-              </button>
-            </div>
-          ) : filteredPapers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-              <FileText size={32} className="text-slate-300 dark:text-white/20 mb-3" />
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                No Manuscripts Found
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-white/50 max-w-sm mt-1 mb-4">
-                {searchQuery ||
-                selectedStatusFilter !== "ALL" ||
-                selectedTrackFilter !== "All Tracks"
-                  ? "No submissions matched your active search or filters. Try adjusting your query."
-                  : "No submissions have been indexed yet."}
-              </p>
-              {(searchQuery ||
-                selectedStatusFilter !== "ALL" ||
-                selectedTrackFilter !== "All Tracks") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedStatusFilter("ALL");
-                    setSelectedTrackFilter("All Tracks");
-                  }}
-                  className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3.5 py-1.5 text-xs text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[0.02] text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
-                    <th className="py-3.5 px-4 sm:px-6">Student / Author</th>
-                    <th className="py-3.5 px-4">Paper Title &amp; ID</th>
-                    <th className="py-3.5 px-4">Track</th>
-                    <th className="py-3.5 px-4">Submitted</th>
-                    <th className="py-3.5 px-4">Review State</th>
-                    <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
-                  {filteredPapers.map((paper, index) => {
-                    const isUpdating = updatingId === paper.id;
-                    const justUpdated = justUpdatedId === paper.id;
-
-                    return (
-                      <motion.tr
-                        key={paper.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.25 }}
-                        className="transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.02] group"
-                      >
-                        {/* Student / Author Column */}
-                        <td className="py-4 px-4 sm:px-6 align-top">
-                          <div className="font-semibold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">
-                            {paper.author_name}
-                          </div>
-                          <div className="mt-0.5 text-slate-500 dark:text-white/50 text-[11px] flex items-center gap-1 font-mono">
-                            <Mail size={10} className="opacity-60" />
-                            <span>{paper.author_email}</span>
-                          </div>
-                          {paper.department && (
-                            <div className="mt-1 text-[10px] text-slate-400 dark:text-white/40 truncate max-w-[200px]">
-                              {paper.department}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Paper Title & ID */}
-                        <td className="py-4 px-4 align-top max-w-[320px]">
-                          <div className="font-medium text-slate-800 dark:text-white/90 line-clamp-2 leading-relaxed">
-                            {paper.paper_title}
-                          </div>
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <span className="font-mono text-[10px] text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-400/10 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-400/20">
-                              {paper.id.slice(0, 8)}...
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(paper.id)}
-                              className="text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white transition-colors"
-                              title="Copy full UUID"
-                            >
-                              {copiedId === paper.id ? (
-                                <Check size={11} className="text-teal-600 dark:text-teal-400" />
-                              ) : (
-                                <Copy size={11} />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-
-                        {/* Track Badge */}
-                        <td className="py-4 px-4 align-top">
-                          <span className="inline-block rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100/70 dark:bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-white/80 max-w-[180px] truncate">
-                            {paper.track}
-                          </span>
-                        </td>
-
-                        {/* Submission Date */}
-                        <td className="py-4 px-4 align-top whitespace-nowrap text-slate-500 dark:text-white/60 font-mono text-[11px]">
-                          {formatDate(paper.created_at)}
-                        </td>
-
-                        {/* Real-time Status Dropdown */}
-                        <td className="py-4 px-4 align-top whitespace-nowrap">
-                          <div className="relative inline-flex items-center gap-1.5">
-                            <select
-                              value={paper.status}
-                              disabled={isUpdating}
-                              onChange={(e) =>
-                                handleUpdateStatus(
-                                  paper.id,
-                                  e.target.value as PaperRecord["status"],
-                                )
-                              }
-                              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold outline-none transition-all cursor-pointer shadow-sm ${
-                                paper.status === "Accepted"
-                                  ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-500/25"
-                                  : paper.status === "Under Review" || paper.status === "Submitted"
-                                    ? "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/40 dark:text-amber-300 hover:bg-amber-100/80 dark:hover:bg-amber-500/25"
-                                    : paper.status === "Revision Required" ||
-                                        paper.status === "Revision Needed"
-                                      ? "bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-500/15 dark:border-indigo-500/40 dark:text-indigo-300 hover:bg-indigo-100/80 dark:hover:bg-indigo-500/25"
-                                      : "bg-rose-50 border-rose-300 text-rose-700 dark:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-300 hover:bg-rose-100/80 dark:hover:bg-rose-500/25"
-                              }`}
-                            >
-                              <option
-                                value="Under Review"
-                                className="bg-white dark:bg-[#141721] text-amber-700 dark:text-amber-300"
-                              >
-                                Under Review
-                              </option>
-                              <option
-                                value="Accepted"
-                                className="bg-white dark:bg-[#141721] text-emerald-700 dark:text-emerald-300"
-                              >
-                                Accepted
-                              </option>
-                              <option
-                                value="Revision Required"
-                                className="bg-white dark:bg-[#141721] text-indigo-700 dark:text-indigo-300"
-                              >
-                                Revision Required
-                              </option>
-                              <option
-                                value="Rejected"
-                                className="bg-white dark:bg-[#141721] text-rose-700 dark:text-rose-300"
-                              >
-                                Rejected
-                              </option>
-                            </select>
-
-                            {isUpdating && (
-                              <RefreshCw
-                                size={12}
-                                className="animate-spin text-slate-400 dark:text-white/60"
-                              />
-                            )}
-                            {justUpdated && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="text-teal-600 dark:text-teal-400 text-[10px] font-semibold flex items-center gap-0.5"
-                              >
-                                <Check size={11} /> Saved
-                              </motion.span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* View PDF / Report Action */}
-                        <td className="py-4 px-4 sm:px-6 align-top text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            {(() => {
-                              const pt = triageMap[paper.id];
-                              if (!pt) return null;
-                              return (
-                                <span
-                                  className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider border ${
-                                    pt.condition === "EXCELLENT"
-                                      ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                      : pt.condition === "ACCEPTABLE"
-                                        ? "bg-teal-50 text-teal-700 border-teal-300 dark:bg-teal-500/20 dark:text-teal-300"
-                                        : pt.condition === "NEEDS_REVISION"
-                                          ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300"
-                                          : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-500/20 dark:text-rose-300"
-                                  }`}
-                                >
-                                  {pt.condition.replace("_", " ")}
-                                </span>
-                              );
-                            })()}
-                            {Boolean(paper.pdf_url || paper.file_url) && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setPdfPreview({
-                                    url: (paper.pdf_url || paper.file_url)!,
-                                    title: paper.paper_title,
-                                  })
-                                }
-                                title="Preview PDF inline"
-                                className="inline-flex items-center gap-1 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors shadow-sm"
-                              >
-                                <ExternalLink size={11} />
-                                <span>PDF</span>
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => setSelectedDossier(paper)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-white transition-all hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-[#0b0c10] shadow-sm active:scale-95"
-                            >
-                              <FileText size={12} />
-                              <span>View PDF / Report</span>
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-=======
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
             </div>
           )}
 
@@ -1871,48 +1512,51 @@ function AdminControlCenter() {
                     <RefreshCw size={24} className="animate-spin mx-auto text-teal-500" />
                     <p className="font-medium">Evaluating manuscript with Gemini 2.5 Flash...</p>
                   </div>
-                ) : triageMap[selectedDossier.id] ? (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/10 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-teal-900 dark:text-teal-200">
-                          Overall Recommendation: {triageMap[selectedDossier.id].recommendation}
-                        </span>
-                        <span className="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-teal-800 dark:text-teal-200">
-                          Score: {triageMap[selectedDossier.id].overallScore}/100
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-teal-700 dark:text-teal-300/90 leading-relaxed">
-                        {triageMap[selectedDossier.id].summary}
-                      </p>
-                    </div>
-
-                    {/* Key Strengths & Weaknesses */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-500/5 space-y-1.5">
-                        <h5 className="font-bold text-emerald-800 dark:text-emerald-300 text-[11px] uppercase tracking-wider">
-                          Key Strengths
-                        </h5>
-                        <ul className="list-disc list-inside space-y-1 text-emerald-700 dark:text-emerald-300/90 text-[11px]">
-                          {triageMap[selectedDossier.id].strengths?.map((s, idx) => (
-                            <li key={idx}>{s}</li>
-                          ))}
-                        </ul>
+                ) : triageMap[selectedDossier.id] ? (() => {
+                  const triage = triageMap[selectedDossier.id]!;
+                  return (
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/10 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-teal-900 dark:text-teal-200">
+                            Overall Recommendation: {triage.recommendedAction}
+                          </span>
+                          <span className="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-teal-800 dark:text-teal-200">
+                            Score: {triage.scores?.overallAssessmentScore ?? 0}/100
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-teal-700 dark:text-teal-300/90 leading-relaxed">
+                          {triage.executiveSummary}
+                        </p>
                       </div>
 
-                      <div className="p-3.5 rounded-xl border border-rose-300 dark:border-rose-500/20 bg-rose-50/50 dark:bg-rose-500/5 space-y-1.5">
-                        <h5 className="font-bold text-rose-800 dark:text-rose-300 text-[11px] uppercase tracking-wider">
-                          Areas for Revision
-                        </h5>
-                        <ul className="list-disc list-inside space-y-1 text-rose-700 dark:text-rose-300/90 text-[11px]">
-                          {triageMap[selectedDossier.id].weaknesses?.map((w, idx) => (
-                            <li key={idx}>{w}</li>
-                          ))}
-                        </ul>
+                      {/* Key Strengths & Weaknesses */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-500/5 space-y-1.5">
+                          <h5 className="font-bold text-emerald-800 dark:text-emerald-300 text-[11px] uppercase tracking-wider">
+                            Key Strengths
+                          </h5>
+                          <ul className="list-disc list-inside space-y-1 text-emerald-700 dark:text-emerald-300/90 text-[11px]">
+                            {triage.analysis?.strengths?.map((s: string, idx: number) => (
+                              <li key={idx}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="p-3.5 rounded-xl border border-rose-300 dark:border-rose-500/20 bg-rose-50/50 dark:bg-rose-500/5 space-y-1.5">
+                          <h5 className="font-bold text-rose-800 dark:text-rose-300 text-[11px] uppercase tracking-wider">
+                            Areas for Revision
+                          </h5>
+                          <ul className="list-disc list-inside space-y-1 text-rose-700 dark:text-rose-300/90 text-[11px]">
+                            {triage.analysis?.weaknesses?.map((w: string, idx: number) => (
+                              <li key={idx}>{w}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
+                  );
+                })() : (
                   <div className="space-y-3">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Abstract Submission</h5>
                     <p className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -1960,64 +1604,9 @@ function AdminControlCenter() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }
 
-<<<<<<< HEAD
-const SIDEBAR_ITEMS = [
-  { label: "Overview", icon: LayoutDashboard },
-  { label: "Participants", icon: Users },
-  { label: "Paper Triage", icon: FileText },
-  { label: "Reviewers", icon: UserCheck },
-  { label: "Evaluation", icon: ClipboardCheck },
-  { label: "Certificates", icon: Award },
-  { label: "Settings", icon: Settings },
-] as const;
-
-function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
-  const [active, setActive] = useState<string>("Paper Triage");
-  return (
-    <aside
-      className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-[#1f2430] bg-[#0b0d14] transition-[width] duration-300 md:flex ${
-        collapsed ? "w-[72px]" : "w-60"
-      }`}
-    >
-      <div className="flex h-16 items-center justify-between gap-2 border-b border-[#1f2430] px-4">
-        {!collapsed && <span className="text-sm font-bold tracking-tight">NCATEX Admin</span>}
-        <button type="button" onClick={onToggle} aria-label="Toggle sidebar" className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white">
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-        </button>
-      </div>
-      <nav className="flex-1 space-y-1 p-3">
-        {SIDEBAR_ITEMS.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            type="button"
-            title={label}
-            onClick={() => {
-              setActive(label);
-              if (label === "Paper Triage" || label === "Overview") window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              active === label ? "bg-teal-500/15 text-teal-300" : "text-slate-400 hover:bg-white/5 hover:text-white"
-            } ${collapsed ? "justify-center" : ""}`}
-          >
-            <Icon size={18} className="shrink-0" />
-            {!collapsed && <span>{label}</span>}
-          </button>
-        ))}
-      </nav>
-      <div className="border-t border-[#1f2430] p-3">
-        <Link to="/login" className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white ${collapsed ? "justify-center" : ""}`}>
-          <LogOut size={18} />
-          {!collapsed && <span>Sign out</span>}
-        </Link>
-      </div>
-    </aside>
-  );
-}
-=======
 export default AdminControlCenter;
->>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
+

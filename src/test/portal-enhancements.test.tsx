@@ -97,7 +97,7 @@ describe("Portal Enhancements & Role-Based Navigation Tests", () => {
       // Single Login Link
       const loginLinks = screen.getAllByRole("link", { name: /Login/i });
       expect(loginLinks.length).toBeGreaterThan(0);
-      expect(loginLinks[0].getAttribute("href")).toBe("/login");
+      expect(loginLinks[0]!.getAttribute("href")).toBe("/login");
 
       // Verify removed buttons from public navbar
       expect(screen.queryByRole("button", { name: /Submit Paper/i })).toBeNull();

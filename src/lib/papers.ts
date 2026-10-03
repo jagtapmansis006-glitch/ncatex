@@ -6,6 +6,7 @@ export type Paper = {
   title: string;
   author: string;
   email: string;
+  department?: string;
   abstract: string;
   tracks: string[];
   fileName?: string;
