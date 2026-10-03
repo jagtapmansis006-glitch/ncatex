@@ -24,6 +24,15 @@ import {
   ArrowUpRight,
   Sparkles,
   ExternalLink,
+  LayoutDashboard,
+  Users,
+  UserCheck,
+  ClipboardCheck,
+  Award,
+  Settings,
+  PanelLeftOpen,
+  PanelLeftClose,
+  LogOut,
 } from "lucide-react";
 import { supabase, type PaperRecord } from "@/lib/supabase";
 import { ThemeToggle } from "@/context/ThemeContext";
@@ -89,6 +98,8 @@ function AdminPortal() {
 
   // Dropdown navigation state
   const [portalMenuOpen, setPortalMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; title: string } | null>(null);
 
   // Fetch papers from Supabase
   const fetchSubmissions = async (isManualRefresh = false) => {
@@ -304,7 +315,9 @@ function AdminPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-[#f1f5f9] font-sans antialiased transition-colors duration-200">
+    <div className="dark flex min-h-screen bg-[#090D16] text-[#f1f5f9] font-sans antialiased">
+      <AdminSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />
+      <div className="min-w-0 flex-1">
       {/* Top Admin Navbar with Sticky Glass Blur */}
       <header
         className={`sticky top-0 z-40 border-b transition-all duration-300 backdrop-blur-xl ${
@@ -838,16 +851,20 @@ function AdminPortal() {
                               );
                             })()}
                             {Boolean(paper.pdf_url || paper.file_url) && (
-                              <a
-                                href={(paper.pdf_url || paper.file_url)!}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Open PDF directly in new tab"
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPdfPreview({
+                                    url: (paper.pdf_url || paper.file_url)!,
+                                    title: paper.paper_title,
+                                  })
+                                }
+                                title="Preview PDF inline"
                                 className="inline-flex items-center gap-1 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors shadow-sm"
                               >
                                 <ExternalLink size={11} />
                                 <span>PDF</span>
-                              </a>
+                              </button>
                             )}
                             <button
                               type="button"
@@ -1326,6 +1343,95 @@ function AdminPortal() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Inline PDF preview */}
+      <AnimatePresence>
+        {pdfPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            onClick={() => setPdfPreview(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 12 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 12 }}
+              transition={{ duration: 0.25, ease: EASE }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#1f2430] bg-[#0f1117]"
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-[#1f2430] px-5 py-3">
+                <p className="truncate text-sm font-semibold">{pdfPreview.title}</p>
+                <div className="flex items-center gap-2">
+                  <a href={pdfPreview.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-semibold hover:bg-white/5">
+                    <ExternalLink size={12} /> New tab
+                  </a>
+                  <button type="button" aria-label="Close preview" onClick={() => setPdfPreview(null)} className="rounded-lg p-1.5 hover:bg-white/10">
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+              <iframe src={pdfPreview.url} title={pdfPreview.title} className="h-full w-full flex-1 bg-white" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
     </div>
+  );
+}
+
+const SIDEBAR_ITEMS = [
+  { label: "Overview", icon: LayoutDashboard },
+  { label: "Participants", icon: Users },
+  { label: "Paper Triage", icon: FileText },
+  { label: "Reviewers", icon: UserCheck },
+  { label: "Evaluation", icon: ClipboardCheck },
+  { label: "Certificates", icon: Award },
+  { label: "Settings", icon: Settings },
+] as const;
+
+function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const [active, setActive] = useState<string>("Paper Triage");
+  return (
+    <aside
+      className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-[#1f2430] bg-[#0b0d14] transition-[width] duration-300 md:flex ${
+        collapsed ? "w-[72px]" : "w-60"
+      }`}
+    >
+      <div className="flex h-16 items-center justify-between gap-2 border-b border-[#1f2430] px-4">
+        {!collapsed && <span className="text-sm font-bold tracking-tight">NCATEX Admin</span>}
+        <button type="button" onClick={onToggle} aria-label="Toggle sidebar" className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white">
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
+      </div>
+      <nav className="flex-1 space-y-1 p-3">
+        {SIDEBAR_ITEMS.map(({ label, icon: Icon }) => (
+          <button
+            key={label}
+            type="button"
+            title={label}
+            onClick={() => {
+              setActive(label);
+              if (label === "Paper Triage" || label === "Overview") window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              active === label ? "bg-teal-500/15 text-teal-300" : "text-slate-400 hover:bg-white/5 hover:text-white"
+            } ${collapsed ? "justify-center" : ""}`}
+          >
+            <Icon size={18} className="shrink-0" />
+            {!collapsed && <span>{label}</span>}
+          </button>
+        ))}
+      </nav>
+      <div className="border-t border-[#1f2430] p-3">
+        <Link to="/login" className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white ${collapsed ? "justify-center" : ""}`}>
+          <LogOut size={18} />
+          {!collapsed && <span>Sign out</span>}
+        </Link>
+      </div>
+    </aside>
   );
 }

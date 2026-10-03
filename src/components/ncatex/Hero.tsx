@@ -120,6 +120,7 @@ export interface HeroProps {
   activeModal?: "submit" | "track" | null | undefined;
   onModalChange?: ((modal: "submit" | "track" | null) => void) | undefined;
   prefilledTrack?: string | undefined;
+  modalsOnly?: boolean | undefined;
 }
 
 export function Header({ onSubmit, onTrack }: HeaderProps) {
@@ -298,7 +299,7 @@ export function Header({ onSubmit, onTrack }: HeaderProps) {
   );
 }
 
-export function Hero({ onSubmit, onTrack, activeModal, onModalChange, prefilledTrack }: HeroProps) {
+export function Hero({ onSubmit, onTrack, activeModal, onModalChange, prefilledTrack, modalsOnly }: HeroProps) {
   const [internalModal, setInternalModal] = useState<null | "submit" | "track">(null);
   const modal = activeModal !== undefined ? activeModal : internalModal;
   const setModal = (m: null | "submit" | "track") => {
@@ -461,7 +462,8 @@ export function Hero({ onSubmit, onTrack, activeModal, onModalChange, prefilledT
   };
 
   return (
-    <section id="top" className="relative pt-8 pb-20 md:pt-14 md:pb-28 overflow-hidden">
+    <section id={modalsOnly ? undefined : "top"} className={modalsOnly ? "contents" : "relative pt-8 pb-20 md:pt-14 md:pb-28 overflow-hidden"}>
+      {!modalsOnly && (<>
       {/* Background ambient lighting glow */}
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-gradient-to-b from-teal-500/15 via-teal-500/5 to-transparent blur-3xl opacity-70 dark:opacity-40" />
 
@@ -594,6 +596,7 @@ export function Hero({ onSubmit, onTrack, activeModal, onModalChange, prefilledT
         </div>
       </div>
 
+      </>)}
       {/* =====================================================================
           SUBMIT PAPER MODAL (Integrated with Supabase)
           ===================================================================== */}
