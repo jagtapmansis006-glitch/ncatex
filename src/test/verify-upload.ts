@@ -1,11 +1,12 @@
 import { handleAiValidationRequest } from "../server/ai-validation-middleware";
 import { GEMINI_MODEL } from "../services/ai-validation/gemini-client";
+import { supabase } from "../lib/supabase";
 
 async function runVerification() {
   console.log("================================================================");
   console.log("       LIVE API VERIFICATION & DOCUMENT UPLOAD PIPELINE        ");
   console.log("================================================================");
-  console.log("Active Gemini Model:     ", GEMINI_MODEL);
+  console.log("Active Gemini Model:       ", GEMINI_MODEL);
   console.log("GEMINI_API_KEY Configured: ", Boolean(process.env["GEMINI_API_KEY"]));
 
   const compliantPdfContent =
@@ -25,51 +26,108 @@ async function runVerification() {
 
   const pdfBuffer = Buffer.from(compliantPdfContent, "utf-8");
 
-  // TEST 1: Multipart/form-data upload test
-  console.log("\n--- TEST 1: Multipart/form-data Document Upload ---");
-  const formData = new FormData();
-  const fileBlob = new Blob([pdfBuffer], { type: "application/pdf" });
-  formData.append("file", fileBlob, "ncatex_student_paper.pdf");
-
-  const uploadReq = new Request("http://localhost:3000/api/student/validate-document", {
-    method: "POST",
-    body: formData,
-  });
-
-  const uploadRes = await handleAiValidationRequest(uploadReq);
-  console.log("HTTP Status Code:", uploadRes?.status);
-  const uploadJson = (await uploadRes?.json()) as {
-    success: boolean;
-    saved: boolean;
-    status: string;
-    result?: {
-      overallScore: number;
-      canSubmit: boolean;
-      summaryMessage: string;
-      fileMetadata: unknown;
-      mandatorySections?: Array<{ sectionName: string; status: string }>;
-    };
+  // TEST 1: Full Submission Pipeline: PDF Upload to 'paper-drafts' -> Public URL -> DB Insert with pdf_url
+  console.log("\n--- TEST 1: Manuscript Submission Pipeline (Storage Upload & DB Insert) ---");
+  const compliantResult = {
+    status: "PASSED" as const,
+    overallScore: 88,
+    canSubmit: true,
+    fileSaved: false,
+    formatting: {
+      status: "PASS" as const,
+      margins: "0.75-inch standard",
+      columnLayout: "Two-column conference layout",
+      lineSpacing: "Single-spaced, 10pt body text",
+      feedback: ["IEEE double-column format validated."],
+    },
+    fonts: {
+      status: "PASS" as const,
+      detectedFonts: ["Times New Roman", "Helvetica"],
+      standardCompliance: true,
+      feedback: ["Standard font compliance verified."],
+    },
+    pageLayout: {
+      status: "PASS" as const,
+      pageCount: 6,
+      headerFooterCorrect: true,
+      visualStructure: "Two-column scientific layout",
+      feedback: ["Header and footer correct."],
+    },
+    mandatorySections: [
+      { sectionName: "Title", present: true, status: "FOUND" as const, feedback: "Title detected." },
+      { sectionName: "Abstract", present: true, status: "FOUND" as const, feedback: "Abstract detected." },
+      { sectionName: "Introduction", present: true, status: "FOUND" as const, feedback: "Introduction detected." },
+      { sectionName: "Methodology / Proposed Architecture", present: true, status: "FOUND" as const, feedback: "Methodology detected." },
+      { sectionName: "Results & Discussion", present: true, status: "FOUND" as const, feedback: "Results detected." },
+      { sectionName: "Conclusion & Future Work", present: true, status: "FOUND" as const, feedback: "Conclusion detected." },
+      { sectionName: "References", present: true, status: "FOUND" as const, feedback: "References detected." },
+    ],
+    studentActionableFeedback: ["Document formatting conforms to conference publication guidelines."],
+    summaryMessage: "Document formatting and mandatory sections validated successfully. You may proceed with submission.",
+    evaluatedAt: new Date().toISOString(),
+    fileMetadata: {
+      filename: "ncatex_student_paper.pdf",
+      fileType: "pdf" as const,
+      fileSizeBytes: pdfBuffer.length,
+    },
   };
 
-  console.log("Upload Result:");
+  const { submitPaperHandler } = await import("../server/ai-validation-functions");
+
+  const submissionResult = await submitPaperHandler({
+    authorName: "Aarav Sharma",
+    authorEmail: "aarav.sharma@ncatex.edu",
+    department: "Dept of Telecommunications",
+    track: "VLSI & Embedded Systems",
+    paperTitle: "Energy-Efficient Neuromorphic Processing for 6G IoT Edge Systems",
+    abstract:
+      "This paper presents an energy-efficient neuromorphic accelerator architecture for ultra-low latency edge inferencing in 6G wireless Internet of Things networks. Evaluated on hardware emulation with significant speedup.",
+    filename: "ncatex_student_paper.pdf",
+    buffer: pdfBuffer,
+    mimeType: "application/pdf",
+    preValidatedResult: compliantResult,
+  });
+
+  console.log("Submission Pipeline Result:");
   console.log(
     JSON.stringify(
       {
-        success: uploadJson?.success,
-        saved: uploadJson?.saved,
-        status: uploadJson?.status,
-        overallScore: uploadJson?.result?.overallScore,
-        canSubmit: uploadJson?.result?.canSubmit,
-        sectionsCount: uploadJson?.result?.mandatorySections?.length,
-        summaryMessage: uploadJson?.result?.summaryMessage,
-        fileMetadata: uploadJson?.result?.fileMetadata,
+        success: submissionResult.success,
+        saved: submissionResult.saved,
+        pdfUrl: submissionResult.pdfUrl,
+        storagePath: submissionResult.storagePath,
+        paperId: submissionResult.paper.id,
+        paperTitle: submissionResult.paper.paper_title,
+        paperStatus: submissionResult.paper.status,
+        pdfUrlInPaperRecord: submissionResult.paper.pdf_url || submissionResult.paper.file_url,
       },
       null,
       2,
     ),
   );
 
-  // TEST 2: Incomplete PDF rejecting without saving (HTTP 422)
+  let testPaperId: string | null = submissionResult.paper.id;
+  let testStoragePath: string | null = submissionResult.storagePath;
+
+  // Verify persistent DB record in Supabase
+  const { data: dbPaper, error: dbErr } = await supabase
+    .from("papers")
+    .select("*")
+    .eq("id", testPaperId)
+    .single();
+
+  if (dbErr) {
+    console.error("Verification query error on papers table:", dbErr);
+  } else {
+    console.log("\nDatabase Record Verification Succeeded:");
+    console.log("  ID:           ", dbPaper?.id);
+    console.log("  Title:        ", dbPaper?.paper_title);
+    console.log("  Author:       ", dbPaper?.author_name);
+    console.log("  PDF / File URL: ", dbPaper?.file_url);
+    console.log("  Abstract Preview: ", dbPaper?.abstract?.slice(0, 150) + "...");
+  }
+
+  // TEST 2: Incomplete PDF rejecting without saving to storage (HTTP 422 -> saved: false)
   console.log("\n--- TEST 2: Incomplete Manuscript Upload (Format Failure -> fileSaved: false) ---");
   const badPdf = "%PDF-1.4\nCorrupted or incomplete draft\n%%EOF";
   const badFormData = new FormData();
@@ -92,24 +150,31 @@ async function runVerification() {
     };
   };
 
-  console.log("Rejection Result:");
-  console.log(
-    JSON.stringify(
-      {
-        success: badJson?.success,
-        saved: badJson?.saved,
-        status: badJson?.status,
-        summaryMessage: badJson?.result?.summaryMessage,
-        actionableFeedbackCount: badJson?.result?.studentActionableFeedback?.length,
-        firstFeedbackItem: badJson?.result?.studentActionableFeedback?.[0],
-      },
-      null,
-      2,
-    ),
-  );
+  console.log("Rejection Result:", JSON.stringify({
+    success: badJson?.success,
+    saved: badJson?.saved,
+    status: badJson?.status,
+    summaryMessage: badJson?.result?.summaryMessage,
+    actionableFeedbackCount: badJson?.result?.studentActionableFeedback?.length,
+  }, null, 2));
 
-  // TEST 3: Admin Review & Triage Endpoint
-  console.log("\n--- TEST 3: Admin Review & Triage Live Execution ---");
+  // TEST 3: Robust Error Handling (Empty file -> 400 Bad Request)
+  console.log("\n--- TEST 3: Robust Error Handling on Invalid Input ---");
+  const emptyFormData = new FormData();
+  emptyFormData.append("file", new Blob([Buffer.from("")], { type: "application/pdf" }), "empty.pdf");
+
+  const emptyReq = new Request("http://localhost:3000/api/student/submit-paper", {
+    method: "POST",
+    body: emptyFormData,
+  });
+
+  const emptyRes = await handleAiValidationRequest(emptyReq);
+  console.log("Empty File HTTP Status Code:", emptyRes?.status);
+  const emptyJson = await emptyRes?.json();
+  console.log("Empty File Handled Error:", emptyJson);
+
+  // TEST 4: Admin Review & Triage Endpoint
+  console.log("\n--- TEST 4: Admin Review & Triage Live Execution ---");
   const triageReq = new Request("http://localhost:3000/api/admin/triage-submission", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -137,8 +202,8 @@ async function runVerification() {
     };
   };
 
-  console.log("Triage Result:");
   console.log(
+    "Triage Result:",
     JSON.stringify(
       {
         success: triageJson?.success,
@@ -152,7 +217,18 @@ async function runVerification() {
     ),
   );
 
+  // Clean up any test row created during verification
+  if (testPaperId) {
+    await supabase.from("papers").delete().eq("id", testPaperId);
+    console.log("\nCleaned up verification test paper record from database.");
+  }
+  if (testStoragePath) {
+    await supabase.storage.from("paper-drafts").remove([testStoragePath]);
+    console.log("Cleaned up verification test file from 'paper-drafts' storage bucket.");
+  }
+
   console.log("================================================================");
 }
 
 runVerification().catch(console.error);
+

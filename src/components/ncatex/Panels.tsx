@@ -103,9 +103,9 @@ export function SubmitModal({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Verify manuscript format validation before finalizing upload
+    // 1. Verify manuscript format validation before finalizing upload
+    let activeResult = validationResult;
     if (file) {
-      let activeResult = validationResult;
       if (!activeResult) {
         setValidating(true);
         const res = await validateStudentDocument(file);
@@ -113,32 +113,113 @@ export function SubmitModal({
         setValidationResult(res.result);
         setValidating(false);
         if (res.saved === false || !res.canSubmit) {
-          setValidationError(res.error || res.result?.summaryMessage || "Document formatting checks failed.");
+          const err = res.error || res.result?.summaryMessage || "Document formatting checks failed.";
+          console.error("AI review rejected file upload:", err);
+          setValidationError(err);
           return; // Stop upload process
         }
       } else if (!activeResult.canSubmit || (activeResult.fileSaved === false && activeResult.status === "FAILED")) {
-        setValidationError(activeResult.summaryMessage || "Document formatting checks failed. Fix indicated issues before submitting.");
+        const err = activeResult.summaryMessage || "Document formatting checks failed. Fix indicated issues before submitting.";
+        console.error("AI review rejected file upload:", err);
+        setValidationError(err);
         return; // Stop upload process
       }
     }
 
     setSubmitting(true);
+    setValidationError(null);
     const id = nextId(papers);
 
+    let pdfUrl: string | null = null;
+
+    // 2. Upload incoming PDF directly to Supabase Storage bucket 'paper-drafts'
+    if (file) {
+      try {
+        const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const storagePath = `drafts/${Date.now()}_${sanitizedFilename}`;
+
+        const { error: storageError } = await supabase.storage
+          .from("paper-drafts")
+          .upload(storagePath, file, {
+            contentType: file.type || "application/pdf",
+            upsert: true,
+          });
+
+        if (storageError) {
+          const errMsg = `Storage upload failed: ${storageError.message}`;
+          console.error(errMsg, storageError);
+          setValidationError(errMsg);
+          setSubmitting(false);
+          return;
+        }
+
+        // 3. Obtain public URL for the uploaded PDF
+        const { data: urlData } = supabase.storage
+          .from("paper-drafts")
+          .getPublicUrl(storagePath);
+
+        pdfUrl = urlData?.publicUrl || null;
+        if (!pdfUrl) {
+          const errMsg = "Storage error: Failed to obtain public URL for uploaded PDF.";
+          console.error(errMsg);
+          setValidationError(errMsg);
+          setSubmitting(false);
+          return;
+        }
+      } catch (uploadCatchErr) {
+        const errMsg = `Storage upload failed: ${uploadCatchErr instanceof Error ? uploadCatchErr.message : String(uploadCatchErr)}`;
+        console.error(errMsg, uploadCatchErr);
+        setValidationError(errMsg);
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    // 4. Update Supabase database insert call on 'papers' table to include pdf_url, AI review output, and abstract details
     try {
-      await supabase.from("papers").insert([
-        {
-          author_name: f.author,
-          author_email: f.email,
-          department: f.department || "Engineering",
-          track: sel[0] || "AI/ML",
-          paper_title: f.title,
-          abstract: f.abstract,
-          status: "Under Review",
-        },
-      ]);
-    } catch {
-      // Fallback
+      const aiSummaryNote = activeResult
+        ? `\n\n--- AI Review Evaluation ---\nScore: ${activeResult.overallScore}/100 | Status: ${activeResult.status}\n${activeResult.summaryMessage}`
+        : "";
+      const fullAbstract = `${f.abstract.trim()}${aiSummaryNote}`;
+
+      const insertPayload: Record<string, any> = {
+        author_name: f.author.trim(),
+        author_email: f.email.trim().toLowerCase(),
+        department: f.department?.trim() || "Engineering",
+        track: sel[0] || "AI/ML",
+        paper_title: f.title.trim(),
+        abstract: fullAbstract,
+        status: "Under Review",
+        pdf_url: pdfUrl,
+        file_url: pdfUrl,
+      };
+
+      let { error: insertError } = await supabase
+        .from("papers")
+        .insert([insertPayload]);
+
+      // Retry without pdf_url if column not present in schema cache
+      if (insertError && insertError.message?.includes("pdf_url")) {
+        console.warn("Retrying database insert without 'pdf_url' column due to schema cache: ", insertError.message);
+        delete insertPayload.pdf_url;
+        const retryResult = await supabase
+          .from("papers")
+          .insert([insertPayload]);
+        insertError = retryResult.error;
+      }
+
+      if (insertError) {
+        console.error("Supabase insert error on 'papers':", insertError);
+        setValidationError(`Database error: Failed to submit paper: ${insertError.message}`);
+        setSubmitting(false);
+        return;
+      }
+    } catch (insertCatchErr) {
+      const errMsg = `Database submission failed: ${insertCatchErr instanceof Error ? insertCatchErr.message : String(insertCatchErr)}`;
+      console.error(errMsg, insertCatchErr);
+      setValidationError(errMsg);
+      setSubmitting(false);
+      return;
     }
 
     savePapers([
@@ -148,6 +229,7 @@ export function SubmitModal({
         ...f,
         tracks: sel,
         fileName: file?.name ?? "",
+        fileUrl: pdfUrl ?? undefined,
         status: "Submitted",
         submittedAt: new Date().toISOString().slice(0, 10),
       },

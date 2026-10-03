@@ -1,4 +1,4 @@
-import { analyzeStudentDocumentHandler } from "./ai-validation-functions";
+import { analyzeStudentDocumentHandler, submitPaperHandler } from "./ai-validation-functions";
 import { adminReviewTriageService } from "../services/ai-validation/admin-triage";
 import type { AdminTriageInput } from "../services/ai-validation/types";
 import { GEMINI_MODEL, resolveGeminiApiKey } from "../services/ai-validation/gemini-client";
@@ -86,7 +86,19 @@ export async function handleAiValidationRequest(request: Request): Promise<Respo
     return await handleStudentDocumentAnalysisEndpoint(request);
   }
 
-  // Route 2: Admin Review & Triage Endpoint
+  // Route 2: Student Paper Submission Pipeline Endpoint
+  if (
+    (pathname === "/api/student/submit-paper" ||
+      pathname === "/api/student/submit" ||
+      pathname === "/api/papers/submit" ||
+      pathname === "/api/paper/submit" ||
+      pathname === "/api/papers/upload") &&
+    request.method === "POST"
+  ) {
+    return await handlePaperSubmissionEndpoint(request);
+  }
+
+  // Route 3: Admin Review & Triage Endpoint
   if (
     (pathname === "/api/admin/triage-submission" ||
       pathname === "/api/admin/triage" ||
@@ -113,6 +125,15 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
     let filename = "manuscript.pdf";
     let base64 = "";
     let mimeType: string | undefined;
+    let saveToStorage = false;
+
+    // Check if paperTitle or title is present to route to submission pipeline
+    let paperTitle = "";
+    let authorName = "";
+    let authorEmail = "";
+    let department = "";
+    let track = "";
+    let abstract = "";
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
@@ -152,12 +173,35 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
       }
 
       base64 = buffer.toString("base64");
+      saveToStorage =
+        formData.get("save") === "true" ||
+        formData.get("saveToStorage") === "true" ||
+        formData.get("submit") === "true";
+
+      paperTitle = (formData.get("paperTitle") || formData.get("title") || "") as string;
+      authorName = (formData.get("authorName") || formData.get("author") || "") as string;
+      authorEmail = (formData.get("authorEmail") || formData.get("email") || "") as string;
+      department = (formData.get("department") || "") as string;
+      track = (formData.get("track") || "") as string;
+      abstract = (formData.get("abstract") || "") as string;
     } else if (contentType.includes("application/json")) {
       const body = (await request.json()) as {
         filename?: string;
         base64?: string;
         mimeType?: string;
         text?: string;
+        save?: boolean;
+        saveToStorage?: boolean;
+        submit?: boolean;
+        paperTitle?: string;
+        title?: string;
+        authorName?: string;
+        author?: string;
+        authorEmail?: string;
+        email?: string;
+        department?: string;
+        track?: string;
+        abstract?: string;
       };
 
       if (!body.base64 && !body.text) {
@@ -181,6 +225,14 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
       } else {
         base64 = Buffer.from(body.text ?? "", "utf-8").toString("base64");
       }
+
+      saveToStorage = Boolean(body.save || body.saveToStorage || body.submit);
+      paperTitle = body.paperTitle || body.title || "";
+      authorName = body.authorName || body.author || "";
+      authorEmail = body.authorEmail || body.email || "";
+      department = body.department || "";
+      track = body.track || "";
+      abstract = body.abstract || "";
     } else {
       return jsonResponse(
         {
@@ -194,12 +246,43 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
       );
     }
 
-    // Call server function handler with extracted buffer payload
+    // If request contains submission metadata (title or submit flag), execute full submission pipeline
+    if (paperTitle || saveToStorage) {
+      const buffer = Buffer.from(base64, "base64");
+      const submissionResult = await submitPaperHandler({
+        authorName: authorName || "Student Author",
+        authorEmail: authorEmail || "student@ncatex.edu",
+        department,
+        track,
+        paperTitle: paperTitle || filename.replace(/\.[^/.]+$/, ""),
+        abstract: abstract || "Submitted manuscript.",
+        filename,
+        buffer,
+        mimeType,
+        apiKey: customKey,
+      });
+
+      return jsonResponse(
+        {
+          success: true,
+          saved: true,
+          status: submissionResult.validationResult.status,
+          pdfUrl: submissionResult.pdfUrl,
+          storagePath: submissionResult.storagePath,
+          paper: submissionResult.paper,
+          result: submissionResult.validationResult,
+        },
+        200,
+      );
+    }
+
+    // Standard pre-validation without saving to database
     const validationResult = await analyzeStudentDocumentHandler({
       filename,
       base64,
       mimeType,
       apiKey: customKey,
+      saveToStorage,
     });
 
     const isPassed = validationResult.status !== "FAILED";
@@ -209,6 +292,8 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
         success: isPassed,
         saved: validationResult.fileSaved, // Strictly false if format checks failed
         status: validationResult.status,
+        pdfUrl: validationResult.pdfUrl,
+        storagePath: validationResult.storagePath,
         result: validationResult,
       },
       isPassed ? 200 : 422,
@@ -220,7 +305,8 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
     const isFormatOrInputError =
       errorMessage.toLowerCase().includes("unsupported") ||
       errorMessage.toLowerCase().includes("invalid") ||
-      errorMessage.toLowerCase().includes("malformed");
+      errorMessage.toLowerCase().includes("malformed") ||
+      errorMessage.toLowerCase().includes("ai review");
 
     return jsonResponse(
       {
@@ -232,6 +318,171 @@ async function handleStudentDocumentAnalysisEndpoint(request: Request): Promise<
         timestamp: new Date().toISOString(),
       },
       isFormatOrInputError ? 422 : 500,
+    );
+  }
+}
+
+/**
+ * Handler for Endpoint: Student Paper Submission Pipeline
+ * Uploads incoming PDF directly to Supabase Storage bucket 'paper-drafts',
+ * obtains public URL, inserts paper into 'papers' table with pdf_url, AI review output,
+ * and abstract details, with comprehensive error handling.
+ */
+async function handlePaperSubmissionEndpoint(request: Request): Promise<Response> {
+  try {
+    const customKey = request.headers.get("X-Gemini-Key") ?? undefined;
+    const contentType = request.headers.get("content-type") ?? "";
+
+    let filename = "manuscript.pdf";
+    let mimeType: string | undefined;
+    let buffer: Buffer | undefined;
+    let authorName = "";
+    let authorEmail = "";
+    let department = "";
+    let track = "";
+    let paperTitle = "";
+    let abstract = "";
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const file = formData.get("file") ?? formData.get("document") ?? formData.get("manuscript");
+
+      if (!file || !(file instanceof Blob)) {
+        return jsonResponse(
+          {
+            success: false,
+            saved: false,
+            status: "FAILED",
+            error: "Bad Request",
+            message: "Missing manuscript document file in multipart/form-data field 'file'.",
+          },
+          400,
+        );
+      }
+
+      filename = (file as File).name || "manuscript.pdf";
+      mimeType = file.type || undefined;
+      const arrayBuffer = await file.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+
+      authorName = (formData.get("authorName") || formData.get("author") || "") as string;
+      authorEmail = (formData.get("authorEmail") || formData.get("email") || "") as string;
+      department = (formData.get("department") || "") as string;
+      track = (formData.get("track") || "") as string;
+      paperTitle = (formData.get("paperTitle") || formData.get("title") || "") as string;
+      abstract = (formData.get("abstract") || "") as string;
+    } else if (contentType.includes("application/json")) {
+      const body = (await request.json()) as {
+        filename?: string;
+        base64?: string;
+        mimeType?: string;
+        authorName?: string;
+        author?: string;
+        authorEmail?: string;
+        email?: string;
+        department?: string;
+        track?: string;
+        paperTitle?: string;
+        title?: string;
+        abstract?: string;
+      };
+
+      if (!body.base64) {
+        return jsonResponse(
+          {
+            success: false,
+            saved: false,
+            status: "FAILED",
+            error: "Bad Request",
+            message: "JSON body must provide 'base64' encoded PDF file data.",
+          },
+          400,
+        );
+      }
+
+      filename = body.filename || "manuscript.pdf";
+      mimeType = body.mimeType;
+      buffer = Buffer.from(body.base64, "base64");
+      authorName = body.authorName || body.author || "";
+      authorEmail = body.authorEmail || body.email || "";
+      department = body.department || "";
+      track = body.track || "";
+      paperTitle = body.paperTitle || body.title || "";
+      abstract = body.abstract || "";
+    } else {
+      return jsonResponse(
+        {
+          success: false,
+          saved: false,
+          status: "FAILED",
+          error: "Unsupported Media Type",
+          message: "Content-Type must be 'multipart/form-data' or 'application/json'.",
+        },
+        415,
+      );
+    }
+
+    if (!buffer || buffer.length === 0) {
+      return jsonResponse(
+        {
+          success: false,
+          saved: false,
+          status: "FAILED",
+          error: "Bad Request",
+          message: "Uploaded manuscript file is empty (0 bytes).",
+        },
+        400,
+      );
+    }
+
+    authorName = authorName.trim() || "Student Author";
+    authorEmail = authorEmail.trim().toLowerCase() || "student@ncatex.edu";
+    paperTitle = paperTitle.trim() || filename.replace(/\.[^/.]+$/, "");
+    abstract = abstract.trim() || "Manuscript submission abstract.";
+
+    const submissionResult = await submitPaperHandler({
+      authorName,
+      authorEmail,
+      department,
+      track,
+      paperTitle,
+      abstract,
+      filename,
+      buffer,
+      mimeType,
+      apiKey: customKey,
+    });
+
+    return jsonResponse(
+      {
+        success: true,
+        saved: true,
+        status: submissionResult.validationResult.status,
+        pdfUrl: submissionResult.pdfUrl,
+        storagePath: submissionResult.storagePath,
+        paper: submissionResult.paper,
+        result: submissionResult.validationResult,
+      },
+      201,
+    );
+  } catch (error: unknown) {
+    console.error("Error in paper submission endpoint:", error);
+    const errorMessage = error instanceof Error ? error.message : "Manuscript submission pipeline failed.";
+    const isAiValidationFail =
+      errorMessage.toLowerCase().includes("ai review") ||
+      errorMessage.toLowerCase().includes("validation failed") ||
+      errorMessage.toLowerCase().includes("formatting checks failed");
+
+    return jsonResponse(
+      {
+        success: false,
+        saved: false,
+        status: "FAILED",
+        error: isAiValidationFail ? "Validation Error" : "Submission Error",
+        message: errorMessage,
+        timestamp: new Date().toISOString(),
+      },
+      isAiValidationFail ? 422 : 500,
     );
   }
 }

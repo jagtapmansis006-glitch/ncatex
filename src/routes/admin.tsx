@@ -837,6 +837,18 @@ function AdminPortal() {
                                 </span>
                               );
                             })()}
+                            {Boolean(paper.pdf_url || paper.file_url) && (
+                              <a
+                                href={(paper.pdf_url || paper.file_url)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open PDF directly in new tab"
+                                className="inline-flex items-center gap-1 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors shadow-sm"
+                              >
+                                <ExternalLink size={11} />
+                                <span>PDF</span>
+                              </a>
+                            )}
                             <button
                               type="button"
                               onClick={() => setSelectedDossier(paper)}
@@ -968,6 +980,53 @@ function AdminPortal() {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Manuscript PDF Document Section */}
+              <div className="py-5 border-b border-slate-200 dark:border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/60 flex items-center gap-1.5">
+                    <FileText size={13} className="text-teal-600 dark:text-teal-400" />
+                    <span>Uploaded Manuscript PDF</span>
+                  </h4>
+                  {(selectedDossier.pdf_url || selectedDossier.file_url) ? (
+                    <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-mono font-semibold uppercase text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 size={10} /> Cloud Storage Verified
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-mono font-semibold uppercase text-amber-700 dark:text-amber-400">
+                      File Unattached
+                    </span>
+                  )}
+                </div>
+
+                {(selectedDossier.pdf_url || selectedDossier.file_url) ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-teal-500/30 bg-teal-500/5 p-4">
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <FileText size={14} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                        <span className="truncate">Manuscript Draft Document</span>
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-white/60 truncate font-mono">
+                        {selectedDossier.pdf_url || selectedDossier.file_url}
+                      </p>
+                    </div>
+                    <a
+                      href={(selectedDossier.pdf_url || selectedDossier.file_url)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 text-xs font-semibold shadow-sm transition-colors shrink-0"
+                    >
+                      <ExternalLink size={13} />
+                      <span>Open / Download PDF</span>
+                    </a>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] p-4 text-xs text-slate-500 dark:text-white/50 flex items-center gap-2">
+                    <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                    <span>No PDF document was attached to this manuscript submission.</span>
+                  </div>
+                )}
               </div>
 
               {/* Abstract Section */}

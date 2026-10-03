@@ -8,8 +8,10 @@ import { extractDocxContent } from "../services/ai-validation/docx-extractor";
 import { GEMINI_MODEL } from "../services/ai-validation/gemini-client";
 import {
   analyzeStudentDocumentHandler,
+  submitPaperHandler,
   triageAdminSubmissionHandler,
 } from "../server/ai-validation-functions";
+import { supabase } from "../lib/supabase";
 
 const SAMPLE_COMPLIANT_MANUSCRIPT_PDF =
   `%PDF-1.4
@@ -356,6 +358,84 @@ trailer
       expect(result).toBeDefined();
       expect(["EXCELLENT", "ACCEPTABLE", "NEEDS_REVISION"]).toContain(result.condition);
       expect(result.scores.overallAssessmentScore).toBeGreaterThan(0);
+    });
+
+    it("executes submitPaperHandler, uploads PDF to paper-drafts, and inserts pdf_url", async () => {
+      const dummyPdf = Buffer.from(SAMPLE_COMPLIANT_MANUSCRIPT_PDF);
+      const preResult = {
+        status: "PASSED" as const,
+        overallScore: 92,
+        canSubmit: true,
+        fileSaved: false,
+        formatting: {
+          status: "PASS" as const,
+          margins: "0.75in",
+          columnLayout: "two-column",
+          lineSpacing: "single",
+          feedback: [],
+        },
+        fonts: {
+          status: "PASS" as const,
+          detectedFonts: ["Times New Roman"],
+          standardCompliance: true,
+          feedback: [],
+        },
+        pageLayout: {
+          status: "PASS" as const,
+          pageCount: 5,
+          headerFooterCorrect: true,
+          visualStructure: "normal",
+          feedback: [],
+        },
+        mandatorySections: [],
+        studentActionableFeedback: [],
+        summaryMessage: "Document passes all guidelines.",
+        evaluatedAt: new Date().toISOString(),
+        fileMetadata: {
+          filename: "test_submission.pdf",
+          fileType: "pdf" as const,
+          fileSizeBytes: dummyPdf.length,
+        },
+      };
+
+      const result = await submitPaperHandler({
+        authorName: "Test Student",
+        authorEmail: "test.student@ncatex.edu",
+        department: "Computer Science",
+        track: "Artificial Intelligence & Machine Learning",
+        paperTitle: "Test Paper For Vitest Pipeline",
+        abstract: "A test abstract.",
+        filename: "vitest_paper.pdf",
+        buffer: dummyPdf,
+        preValidatedResult: preResult,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.saved).toBe(true);
+      expect(result.pdfUrl).toContain("paper-drafts");
+      expect(result.paper).toBeDefined();
+      expect(result.paper.pdf_url || result.paper.file_url).toBe(result.pdfUrl);
+
+      // Clean up test records
+      if (result.paper.id) {
+        await supabase.from("papers").delete().eq("id", result.paper.id);
+      }
+      if (result.storagePath) {
+        await supabase.storage.from("paper-drafts").remove([result.storagePath]);
+      }
+    });
+
+    it("throws a clear error if manuscript file buffer is missing in submitPaperHandler", async () => {
+      await expect(
+        submitPaperHandler({
+          authorName: "Missing Buffer",
+          authorEmail: "missing@test.com",
+          paperTitle: "No File",
+          abstract: "Abstract",
+          filename: "empty.pdf",
+          buffer: Buffer.from(""),
+        }),
+      ).rejects.toThrow("Manuscript file buffer is empty or missing");
     });
   });
 });

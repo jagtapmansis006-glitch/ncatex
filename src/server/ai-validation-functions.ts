@@ -2,26 +2,38 @@ import { createServerFn } from "@tanstack/react-start";
 import { studentDocumentValidator } from "../services/ai-validation/student-validator";
 import { adminReviewTriageService } from "../services/ai-validation/admin-triage";
 import type { StudentValidationResult, AdminTriageResult } from "../services/ai-validation/types";
+import { supabase, type PaperRecord } from "../lib/supabase";
 
 export interface StudentDocumentAnalysisPayload {
   filename: string;
   base64: string;
   mimeType?: string | undefined;
   apiKey?: string | undefined;
+  saveToStorage?: boolean | undefined;
 }
 
-export interface AdminTriagePayload {
-  paperId?: string | undefined;
-  paperTitle: string;
-  authorName?: string | undefined;
+export interface PaperSubmissionPayload {
+  authorName: string;
+  authorEmail: string;
   department?: string | undefined;
   track?: string | undefined;
+  paperTitle: string;
   abstract: string;
-  fullText?: string | undefined;
-  fileBase64?: string | undefined;
-  documentFilename?: string | undefined;
-  documentMimeType?: string | undefined;
+  filename: string;
+  base64?: string | undefined;
+  buffer?: Buffer | Uint8Array | undefined;
+  mimeType?: string | undefined;
   apiKey?: string | undefined;
+  preValidatedResult?: StudentValidationResult | undefined;
+}
+
+export interface PaperSubmissionResult {
+  success: boolean;
+  saved: boolean;
+  paper: PaperRecord;
+  pdfUrl: string;
+  storagePath: string;
+  validationResult: StudentValidationResult;
 }
 
 /**
@@ -31,12 +43,188 @@ export async function analyzeStudentDocumentHandler(
   data: StudentDocumentAnalysisPayload,
 ): Promise<StudentValidationResult> {
   const buffer = Buffer.from(data.base64, "base64");
-  return await studentDocumentValidator.analyzeDocument({
+  const result = await studentDocumentValidator.analyzeDocument({
     filename: data.filename,
     buffer,
     mimeType: data.mimeType,
     apiKey: data.apiKey,
   });
+
+  // If saveToStorage is requested and format validation passed, save to 'paper-drafts'
+  if (data.saveToStorage && result.status !== "FAILED" && result.canSubmit) {
+    try {
+      const sanitizedFilename = data.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storagePath = `drafts/${Date.now()}_${sanitizedFilename}`;
+      const { error: storageError } = await supabase.storage
+        .from("paper-drafts")
+        .upload(storagePath, buffer, {
+          contentType: data.mimeType || "application/pdf",
+          upsert: true,
+        });
+
+      if (storageError) {
+        console.error("Storage upload error during validation save:", storageError);
+        throw new Error(`Storage upload failed: ${storageError.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("paper-drafts")
+        .getPublicUrl(storagePath);
+
+      if (urlData?.publicUrl) {
+        result.fileSaved = true;
+        result.pdfUrl = urlData.publicUrl;
+        result.storagePath = storagePath;
+      }
+    } catch (storageErr) {
+      console.error("Failed to save validated document to Supabase Storage:", storageErr);
+      throw storageErr;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Underlying handler for Student Paper Submission Pipeline.
+ * 1. Runs AI review layer (validation checks).
+ * 2. Uploads the incoming PDF directly to Supabase Storage bucket 'paper-drafts'.
+ * 3. Obtains public URL for the uploaded PDF.
+ * 4. Inserts row into 'papers' table with pdf_url, AI review output, and abstract details.
+ * 5. Handles errors with clear logging and exceptions.
+ */
+export async function submitPaperHandler(
+  data: PaperSubmissionPayload,
+): Promise<PaperSubmissionResult> {
+  const fileBuffer = data.buffer
+    ? Buffer.isBuffer(data.buffer)
+      ? data.buffer
+      : Buffer.from(data.buffer)
+    : data.base64
+      ? Buffer.from(data.base64, "base64")
+      : null;
+
+  if (!fileBuffer || fileBuffer.length === 0) {
+    const errorMsg = "Submission rejected: Manuscript file buffer is empty or missing.";
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  const filename = data.filename || "manuscript.pdf";
+  const mimeType = data.mimeType || "application/pdf";
+
+  // Step 1: AI Review Layer
+  let validationResult = data.preValidatedResult;
+  if (!validationResult) {
+    try {
+      validationResult = await studentDocumentValidator.analyzeDocument({
+        filename,
+        buffer: fileBuffer,
+        mimeType,
+        apiKey: data.apiKey,
+      });
+    } catch (aiError) {
+      const errorMsg = `AI review execution failed: ${aiError instanceof Error ? aiError.message : String(aiError)}`;
+      console.error(errorMsg, aiError);
+      throw new Error(errorMsg);
+    }
+  }
+
+  if (validationResult.status === "FAILED" || !validationResult.canSubmit) {
+    const errorMsg = `AI review validation failed: ${validationResult.summaryMessage || "Document formatting checks failed."}`;
+    console.error(errorMsg, validationResult);
+    throw new Error(errorMsg);
+  }
+
+  // Step 2: Upload incoming PDF directly to Supabase Storage bucket 'paper-drafts'
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath = `drafts/${Date.now()}_${sanitizedFilename}`;
+
+  const { error: storageError } = await supabase.storage
+    .from("paper-drafts")
+    .upload(storagePath, fileBuffer, {
+      contentType: mimeType,
+      upsert: true,
+    });
+
+  if (storageError) {
+    const errorMsg = `Storage upload failed: ${storageError.message}`;
+    console.error(errorMsg, storageError);
+    throw new Error(errorMsg);
+  }
+
+  // Step 3: Obtain public URL for the uploaded PDF file
+  const { data: urlData } = supabase.storage
+    .from("paper-drafts")
+    .getPublicUrl(storagePath);
+
+  const pdfUrl = urlData?.publicUrl;
+  if (!pdfUrl) {
+    const errorMsg = `Storage error: Failed to obtain public URL for uploaded PDF in 'paper-drafts' at ${storagePath}.`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  // Step 4: Update Supabase database insert call on 'papers' table
+  // Include pdf_url (and file_url) along with AI review output and abstract details
+  const aiSummaryBlock = `\n\n--- AI Review Audit ---\nScore: ${validationResult.overallScore}/100 | Status: ${validationResult.status}\n${validationResult.summaryMessage}`;
+  const combinedAbstract = `${data.abstract.trim()}${aiSummaryBlock}`;
+
+  const insertPayload: Record<string, any> = {
+    author_name: data.authorName.trim(),
+    author_email: data.authorEmail.trim().toLowerCase(),
+    department: (data.department || "Engineering").trim(),
+    track: data.track || "Artificial Intelligence & Machine Learning",
+    paper_title: data.paperTitle.trim(),
+    abstract: combinedAbstract,
+    status: "Under Review",
+    pdf_url: pdfUrl,
+    file_url: pdfUrl,
+  };
+
+  let { data: insertedPaper, error: dbError } = await supabase
+    .from("papers")
+    .insert([insertPayload])
+    .select()
+    .single();
+
+  // If column 'pdf_url' is not found in schema cache, retry without 'pdf_url' key
+  if (dbError && dbError.message?.includes("pdf_url")) {
+    console.warn("Retrying database insert without 'pdf_url' column due to schema cache: ", dbError.message);
+    delete insertPayload.pdf_url;
+    const retry = await supabase
+      .from("papers")
+      .insert([insertPayload])
+      .select()
+      .single();
+    insertedPaper = retry.data;
+    dbError = retry.error;
+  }
+
+  if (dbError || !insertedPaper) {
+    const errorMsg = `Database insert failed: ${dbError ? dbError.message : "Failed to record paper in database."}`;
+    console.error(errorMsg, dbError);
+    throw new Error(errorMsg);
+  }
+
+  const paperRecord: PaperRecord = {
+    ...(insertedPaper as PaperRecord),
+    pdf_url: (insertedPaper as any).pdf_url || (insertedPaper as any).file_url || pdfUrl,
+    file_url: (insertedPaper as any).file_url || pdfUrl,
+  };
+
+  validationResult.fileSaved = true;
+  validationResult.pdfUrl = pdfUrl;
+  validationResult.storagePath = storagePath;
+
+  return {
+    success: true,
+    saved: true,
+    paper: paperRecord,
+    pdfUrl,
+    storagePath,
+    validationResult,
+  };
 }
 
 /**
@@ -63,9 +251,6 @@ export async function triageAdminSubmissionHandler(
 
 /**
  * TanStack Start Server Function for Student Document Analysis
- * Accepts base64 encoded file data (PDF/DOCX) or text snippet.
- * Checks formatting, fonts, page layouts, and mandatory sections via gemini-3.8-flash.
- * Returns actionable feedback without saving files if format checks fail.
  */
 export const analyzeStudentDocumentServerFn = createServerFn({ method: "POST" })
   .validator((data: StudentDocumentAnalysisPayload) => data)
@@ -74,9 +259,16 @@ export const analyzeStudentDocumentServerFn = createServerFn({ method: "POST" })
   });
 
 /**
+ * TanStack Start Server Function for Student Paper Submission Pipeline
+ */
+export const submitPaperServerFn = createServerFn({ method: "POST" })
+  .validator((data: PaperSubmissionPayload) => data)
+  .handler(async ({ data }): Promise<PaperSubmissionResult> => {
+    return await submitPaperHandler(data);
+  });
+
+/**
  * TanStack Start Server Function for Admin Review & Triage
- * Evaluates approved submissions for content quality, technical depth, and condition.
- * Generates an executive summary and recommended action (APPROVE, REJECT, REQUEST_CHANGES).
  */
 export const triageAdminSubmissionServerFn = createServerFn({ method: "POST" })
   .validator((data: AdminTriagePayload) => data)

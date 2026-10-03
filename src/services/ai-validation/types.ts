@@ -44,6 +44,8 @@ export interface StudentValidationResult {
   overallScore: number; // 0 - 100
   canSubmit: boolean;
   fileSaved: boolean; // Must be false if format checks fail
+  pdfUrl?: string | undefined;
+  storagePath?: string | undefined;
   formatting: StudentFormattingCheck;
   fonts: StudentFontCheck;
   pageLayout: StudentPageLayoutCheck;
