@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { motion } from "framer-motion";
 import { Brain, Cpu, Radio, Wifi, Activity, ArrowUpRight } from "lucide-react";
 
@@ -133,3 +134,7 @@ export function Tracks({ onSelectTrack }: TracksProps) {
 }
 
 export default Tracks;
+=======
+export * from "../common/Tracks";
+export { default } from "../common/Tracks";
+>>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)

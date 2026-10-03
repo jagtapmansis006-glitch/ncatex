@@ -49,8 +49,12 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
-      if (url.pathname.includes("/__l5e/assets-v1/") || url.pathname.includes("ncatex-hero-web.webm")) {
-        return Response.redirect(new URL("/hero-video.mp4", request.url), 302);
+      if (
+        url.pathname.includes("/__l5e/assets-v1/") ||
+        url.pathname.includes("ncatex-hero-web.webm") ||
+        url.pathname.includes("hero-video.mp4")
+      ) {
+        return Response.redirect(new URL("/assets/circuit-hero.mp4", request.url), 302);
       }
 
       const aiResponse = await handleAiValidationRequest(request);

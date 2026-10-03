@@ -143,7 +143,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <div className="page-transition min-h-screen">
+          <Outlet />
+        </div>
       </ThemeProvider>
     </QueryClientProvider>
   );

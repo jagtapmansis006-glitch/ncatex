@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Upload, X, Search, CheckCircle2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
@@ -796,3 +797,7 @@ export const StudentPanel = SubmitModal;
 export const StudentSubmission = SubmitModal;
 export const StudentUpload = SubmitModal;
 
+=======
+export * from "../common/Panels";
+export { default } from "../common/Panels";
+>>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)

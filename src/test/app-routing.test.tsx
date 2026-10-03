@@ -31,6 +31,14 @@ describe("App routing", () => {
     );
   });
 
+  it("renders the login route", async () => {
+    const { container } = renderAt("/login");
+
+    await waitFor(() =>
+      expect(document.body.firstChild ?? container.firstChild).not.toBeNull(),
+    );
+  });
+
   it("renders the not-found route", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
 

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -771,3 +772,7 @@ export function Hero({ onSubmit, onTrack, activeModal, onModalChange, prefilledT
 }
 
 export default Hero;
+=======
+export * from "../hero/Hero";
+export { default } from "../hero/Hero";
+>>>>>>> 6ecf61d (Refactor landing hero layout, update video asset, add logo, and clean code)
