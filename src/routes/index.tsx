@@ -33,7 +33,6 @@ const DATES: [string, string, string][] = [
   ["2026-03-15", "Mar 15, 2026", "Camera-ready manuscript submission"],
   ["2026-03-27", "Mar 27–28, 2026", "Official conference sessions"],
 ];
-const CONFERENCE_START = new Date("2026-03-27T09:00:00+05:30").getTime();
 
 const FAQ = [
   [
