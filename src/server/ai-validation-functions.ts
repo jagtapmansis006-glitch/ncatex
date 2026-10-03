@@ -28,7 +28,7 @@ export interface PaperSubmissionPayload {
 }
 
 export interface AdminTriagePayload {
-  paperId: string;
+  paperId?: string | undefined;
   paperTitle: string;
   authorName: string;
   department?: string | undefined;
