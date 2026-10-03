@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Header, Hero } from "@/components/ncatex/Hero";
+import { Hero } from "@/components/ncatex/Hero";
+import { SiteNav, LandingHero, QuickInfoBar, useNow } from "@/components/ncatex/Landing";
 import { Tracks } from "@/components/ncatex/Tracks";
 
 export const Route = createFileRoute("/")({
@@ -25,13 +26,14 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const DATES = [
-  ["Jan 15, 2026", "Call for papers opens"],
-  ["Feb 20, 2026", "Paper submission deadline"],
-  ["Mar 05, 2026", "Peer review & acceptance notification"],
-  ["Mar 15, 2026", "Camera-ready manuscript submission"],
-  ["Mar 27–28, 2026", "Official conference sessions"],
+const DATES: [string, string, string][] = [
+  ["2026-01-15", "Jan 15, 2026", "Call for papers opens"],
+  ["2026-02-20", "Feb 20, 2026", "Paper submission deadline"],
+  ["2026-03-05", "Mar 05, 2026", "Peer review & acceptance notification"],
+  ["2026-03-15", "Mar 15, 2026", "Camera-ready manuscript submission"],
+  ["2026-03-27", "Mar 27–28, 2026", "Official conference sessions"],
 ];
+const CONFERENCE_START = new Date("2026-03-27T09:00:00+05:30").getTime();
 
 const FAQ = [
   [
@@ -59,6 +61,8 @@ function Index() {
   const [activeModal, setActiveModal] = useState<"submit" | "track" | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<string | undefined>(undefined);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const now = useNow();
+  const nextDeadline = DATES.find(([iso]) => new Date(iso).getTime() >= now)?.[0];
 
   const handleOpenSubmit = (track?: string) => {
     if (track) setSelectedTrack(track);
@@ -67,11 +71,13 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
-      {/* Navigation Header with Light/Dark Theme Switch and sticky glass blur */}
-      <Header onSubmit={() => handleOpenSubmit()} onTrack={() => setActiveModal("track")} />
+      <SiteNav onSubmit={() => handleOpenSubmit()} />
+      <LandingHero onSubmit={() => handleOpenSubmit()} />
+      <QuickInfoBar />
 
-      {/* Centered Visual Hero Section with Framed Video Reel and Modal Dialogs */}
+      {/* Submission & tracking modals (logic preserved from Hero) */}
       <Hero
+        modalsOnly
         activeModal={activeModal}
         onModalChange={setActiveModal}
         prefilledTrack={selectedTrack}
@@ -81,7 +87,7 @@ function Index() {
 
       {/* About Section matching typography, clean border radii, and subtle lifts */}
       <section
-        id="about"
+        id="overview"
         className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 py-24 md:grid-cols-2"
       >
         <div>
@@ -143,23 +149,41 @@ function Index() {
             </h2>
           </div>
 
-          <div className="divide-y divide-white/10 border-y border-white/10">
-            {DATES.map(([d, l], i) => (
-              <motion.div
-                key={d}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06, duration: 0.5 }}
-                className="flex items-center justify-between py-6 transition-colors hover:bg-white/[0.02]"
-              >
-                <span className="text-sm font-medium text-white/80 md:text-base">{l}</span>
-                <span className="font-mono text-lg font-semibold tracking-tight text-teal-300 md:text-xl">
-                  {d}
-                </span>
-              </motion.div>
-            ))}
-          </div>
+          <ol className="relative ml-3 border-l border-white/15">
+            {DATES.map(([iso, d, l], i) => {
+              const isNext = iso === nextDeadline;
+              const past = new Date(iso).getTime() < now;
+              return (
+                <motion.li
+                  key={iso}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06, duration: 0.5 }}
+                  className="relative pb-10 pl-8 last:pb-0"
+                >
+                  <span
+                    className={`absolute -left-[9px] top-1 h-4 w-4 rounded-full border-2 ${
+                      isNext
+                        ? "border-teal-300 bg-teal-400 shadow-[0_0_0_6px_rgba(45,212,191,0.2)]"
+                        : past
+                          ? "border-white/40 bg-white/40"
+                          : "border-white/30 bg-slate-900"
+                    }`}
+                  />
+                  <div className={`rounded-xl p-4 ${isNext ? "border border-teal-400/40 bg-teal-400/10" : ""}`}>
+                    <p className="font-mono text-sm font-semibold text-teal-300">{d}</p>
+                    <p className={`mt-1 text-base ${past ? "text-white/50" : "text-white"}`}>{l}</p>
+                    {isNext && (
+                      <span className="mt-2 inline-block rounded-full bg-teal-400 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-900">
+                        Next deadline
+                      </span>
+                    )}
+                  </div>
+                </motion.li>
+              );
+            })}
+          </ol>
         </div>
       </section>
 
