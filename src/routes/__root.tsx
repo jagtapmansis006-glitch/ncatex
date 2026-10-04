@@ -152,12 +152,11 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-// Global fallback queryClient if context isn't passed cleanly
-const defaultQueryClient = new QueryClient();
+const fallbackQueryClient = new QueryClient();
 
 function RootComponent() {
   const context = Route.useRouteContext();
-  const queryClient = context?.queryClient || defaultQueryClient;
+  const queryClient = context?.queryClient || fallbackQueryClient;
 
   return (
     <ErrorBoundary>
@@ -176,5 +175,8 @@ function RootComponent() {
   );
 }
 
-// CRITICAL: Export default Route to support both named & default routeTree generators
+// Named export for TanStack Router generator
+export { Route as rootRoute };
+
+// Default export for generic bundler imports
 export default Route;
