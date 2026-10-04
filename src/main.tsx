@@ -1,15 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
-import { createRouter } from "./router";
+import { getRouter } from "./router";
 
-const router = createRouter();
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
-}
+const router = getRouter();
 
 const rootElement = document.getElementById("root");
 
