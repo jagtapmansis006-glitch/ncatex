@@ -1,3 +1,10 @@
+// Polyfill global and process for third-party dependencies in the browser
+if (typeof window !== "undefined") {
+  (window as unknown as { global?: unknown }).global = window;
+  (window as unknown as { process?: { env?: Record<string, string> } }).process =
+    (window as unknown as { process?: { env?: Record<string, string> } }).process || { env: {} };
+}
+
 import React from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";

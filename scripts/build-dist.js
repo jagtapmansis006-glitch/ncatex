@@ -44,6 +44,10 @@ const htmlContent = `<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NCATEX - National Conference on Advanced Trends in Electronics and Telecommunication Engineering</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <script>
+      window.global = window;
+      window.process = window.process || { env: {} };
+    </script>
     ${cssFile ? `<link rel="stylesheet" crossorigin href="/assets/${cssFile}">` : ""}
   </head>
   <body>

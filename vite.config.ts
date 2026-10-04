@@ -8,6 +8,10 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   vite: {
+    define: {
+      "process.env": {},
+      global: "window",
+    },
     base: "/",
     build: {
       outDir: "dist",
