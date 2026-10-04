@@ -152,8 +152,12 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+// Global fallback queryClient if context isn't passed cleanly
+const defaultQueryClient = new QueryClient();
+
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+  const context = Route.useRouteContext();
+  const queryClient = context?.queryClient || defaultQueryClient;
 
   return (
     <ErrorBoundary>
@@ -161,7 +165,6 @@ function RootComponent() {
         <ThemeProvider>
           <SettingsProvider>
             <AnnouncementsProvider>
-              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
               <div className="page-transition min-h-screen">
                 <Outlet />
               </div>
@@ -172,3 +175,6 @@ function RootComponent() {
     </ErrorBoundary>
   );
 }
+
+// CRITICAL: Export default Route to support both named & default routeTree generators
+export default Route;
