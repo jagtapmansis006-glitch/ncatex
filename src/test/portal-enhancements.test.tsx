@@ -86,7 +86,7 @@ describe("Portal Enhancements & Role-Based Navigation Tests", () => {
       );
 
       // Title & Logo
-      expect(screen.getByText("NCATEX 2026")).toBeDefined();
+      expect(screen.getByText("NCATEX")).toBeDefined();
 
       // Navigation links
       expect(screen.getByRole("link", { name: "Overview" })).toBeDefined();

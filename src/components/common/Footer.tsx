@@ -17,39 +17,45 @@ export function Footer() {
           <a href="#top" className="group flex flex-col items-center gap-3 transition-opacity hover:opacity-90">
             <img
               src="/assets/ncatex-logo.png"
-              alt="NCATEX 2026 Official Logo"
+              alt="NCATEX Official Logo"
               className="h-12 w-auto md:h-14 object-contain drop-shadow-[0_0_12px_rgba(59,130,246,0.3)] transition-transform duration-300 group-hover:scale-105"
             />
             <span className="font-display font-bold tracking-tight text-slate-900 dark:text-white text-lg sm:text-xl">
-              NCATEX 2026
+              NCATEX
             </span>
           </a>
-          <p className="mt-1 max-w-md text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-1 max-w-md text-xs text-slate-600 dark:text-slate-400 font-medium">
             National Conference on Advanced Trends in Electronics and Telecommunication Engineering
           </p>
         </div>
 
-        {/* Indexed Proceedings & Academic Partners Marquee */}
-        <p className="mb-6 text-center text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 font-semibold">
+        {/* Indexed Proceedings & Academic Partners Marquee (High-Contrast Ticker) */}
+        <p className="mb-6 text-center text-xs uppercase tracking-[0.25em] text-slate-800 dark:text-slate-200 font-bold">
           Indexed Proceedings &amp; Academic Partners
         </p>
-        <div className="overflow-hidden">
-          <div className="marquee-projects flex w-max gap-20">
+        <div
+          className="marquee-container overflow-hidden py-3 cursor-pointer group"
+          tabIndex={0}
+          aria-label="Academic partner and indexed proceedings marquee"
+        >
+          <div className="marquee-projects flex w-max gap-8 items-center group-hover:[animation-play-state:paused]">
             {[...SPONSORS, ...SPONSORS, ...SPONSORS, ...SPONSORS].map((s, i) => (
-              <span
+              <div
                 key={i}
-                className="text-2xl sm:text-3xl font-medium tracking-tight text-slate-400 dark:text-slate-600 transition-colors hover:text-slate-900 dark:hover:text-white cursor-default"
+                className="flex items-center gap-3 px-5 py-2.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm transition-all duration-200 hover:border-teal-500 hover:shadow-md cursor-pointer shrink-0"
               >
-                {s}
-              </span>
+                <span className="h-2.5 w-2.5 rounded-full bg-teal-500 shrink-0" />
+                <span className="text-sm sm:text-base font-bold tracking-tight text-slate-950 dark:text-white">
+                  {s}
+                </span>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Copyright notice */}
-        <p className="mt-12 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
-          © 2026 2nd National Conference on Advanced Trends in Engineering (NCATEX) • All rights
-          reserved.
+        {/* Copyright notice without hardcoded years */}
+        <p className="mt-12 text-center text-xs font-medium text-slate-600 dark:text-slate-400">
+          © National Conference on Advanced Trends in Engineering (NCATEX) • All rights reserved.
         </p>
       </div>
     </footer>

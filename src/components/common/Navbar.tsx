@@ -25,7 +25,7 @@ export function Logo() {
   return (
     <img
       src="/assets/ncatex-logo.png"
-      alt="NCATEX 2026 Logo"
+      alt="NCATEX Logo"
       className="h-8 w-auto md:h-10 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] transition-transform duration-200 hover:scale-105 shrink-0"
     />
   );
@@ -35,6 +35,7 @@ const NAV_LINKS = [
   { label: "Overview", href: "#overview" },
   { label: "Tracks", href: "#tracks" },
   { label: "Dates", href: "#dates" },
+  { label: "Reviews", href: "#reviews" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -95,7 +96,7 @@ export function Navbar({ onSubmit, onTrack, roleOverride }: NavbarProps) {
           >
             <Logo />
             <span className="font-display font-bold tracking-tight text-slate-900 dark:text-white text-base sm:text-lg">
-              NCATEX 2026
+              NCATEX
             </span>
           </a>
 

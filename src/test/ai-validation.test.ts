@@ -175,7 +175,7 @@ trailer
   describe("Persona 2: Admin Review & Triage", () => {
     it("triages an excellent high-depth submission to APPROVE with condition EXCELLENT", async () => {
       const input = {
-        paperId: "NCATEX-2026-901",
+        paperId: "NCATEX-901",
         paperTitle: "Real-Time Beamforming & Massive MIMO Optimization for 6G Terahertz Networks",
         authorName: "Dr. Vikram Seth",
         department: "Telecommunications Engineering",
@@ -201,7 +201,7 @@ trailer
 
     it("triages a superficial submission to REJECT or REQUEST_CHANGES with condition POOR or NEEDS_REVISION", async () => {
       const input = {
-        paperId: "NCATEX-2026-902",
+        paperId: "NCATEX-902",
         paperTitle: "A Brief Look at Modern Computers",
         authorName: "Student Anonymous",
         department: "General",
@@ -219,7 +219,7 @@ trailer
 
     it("triages a promising submission requiring revisions to REQUEST_CHANGES", async () => {
       const input = {
-        paperId: "NCATEX-2026-903",
+        paperId: "NCATEX-903",
         paperTitle: "Exploration of CNN Quantization on Microcontrollers",
         authorName: "Pooja V.",
         department: "Computer Science",

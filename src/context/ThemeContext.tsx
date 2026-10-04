@@ -98,14 +98,12 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   // Avoid rendering client-specific theme attributes during SSR hydration
   if (!mounted) {
     return (
-      <button
-        type="button"
-        className={`relative inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-sm backdrop-blur-sm opacity-80 ${className}`}
-        aria-label="Toggle theme"
+      <div
+        className={`relative inline-flex h-8 w-16 items-center rounded-full border border-slate-300 dark:border-white/10 bg-slate-200/80 dark:bg-slate-800/80 p-1 opacity-70 ${className}`}
+        aria-hidden="true"
       >
-        <div className="relative h-4 w-4" />
-        <span className="text-[11px] hidden sm:inline font-medium">Theme</span>
-      </button>
+        <span className="h-6 w-6 rounded-full bg-white shadow-sm" />
+      </div>
     );
   }
 
@@ -114,39 +112,43 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={isDark}
       onClick={toggleTheme}
-      className={`relative inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 active:scale-95 ${className}`}
+      className={`group relative inline-flex h-8 w-16 shrink-0 cursor-pointer items-center rounded-full border p-1 transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${
+        isDark
+          ? "border-slate-700/80 bg-[#0f1422] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"
+          : "border-slate-300 bg-slate-200/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]"
+      } ${className}`}
       title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-      aria-label="Toggle light/dark theme"
+      aria-label="Toggle light and dark theme"
     >
-      <div className="relative h-4 w-4">
-        <AnimatePresence initial={false} mode="wait">
-          {isDark ? (
-            <motion.div
-              key="moon"
-              initial={{ rotate: -90, scale: 0, opacity: 0 }}
-              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-              exit={{ rotate: 90, scale: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="absolute inset-0 flex items-center justify-center text-amber-300"
-            >
-              <Moon size={14} className="fill-amber-300/30" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="sun"
-              initial={{ rotate: 90, scale: 0, opacity: 0 }}
-              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-              exit={{ rotate: -90, scale: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="absolute inset-0 flex items-center justify-center text-amber-500"
-            >
-              <Sun size={14} className="fill-amber-500/20" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      <span className="text-[11px] hidden sm:inline font-medium">{isDark ? "Dark" : "Light"}</span>
+      {/* Background Track Icons */}
+      <span className="absolute left-2 flex items-center justify-center text-amber-500/70 pointer-events-none transition-opacity duration-300">
+        <Sun size={12} />
+      </span>
+      <span className="absolute right-2 flex items-center justify-center text-slate-400 dark:text-teal-400/60 pointer-events-none transition-opacity duration-300">
+        <Moon size={12} />
+      </span>
+
+      {/* Sliding Knob with Smooth translateX and 0.3s Transition */}
+      <span
+        style={{
+          transform: isDark ? "translateX(32px)" : "translateX(0px)",
+          transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, box-shadow 0.3s ease",
+        }}
+        className={`pointer-events-none relative flex h-6 w-6 items-center justify-center rounded-full shadow-md ${
+          isDark
+            ? "bg-slate-900 border border-teal-500/40 text-teal-300 shadow-teal-950/40"
+            : "bg-white border border-slate-200 text-amber-500 shadow-slate-400/20"
+        }`}
+      >
+        {isDark ? (
+          <Moon size={12} className="fill-teal-400/20 text-teal-400 transition-transform duration-300" />
+        ) : (
+          <Sun size={12} className="fill-amber-500/20 text-amber-500 transition-transform duration-300" />
+        )}
+      </span>
     </button>
   );
 }

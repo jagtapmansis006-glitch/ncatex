@@ -30,10 +30,10 @@ function Overlay({
     >
       <motion.div
         onClick={(e) => e.stopPropagation()}
-        initial={side ? { x: "100%" } : { scale: 0.95, opacity: 0 }}
+        initial={side ? { x: "100%" } : { scale: 0.96, opacity: 0 }}
         animate={side ? { x: 0 } : { scale: 1, opacity: 1 }}
-        exit={side ? { x: "100%" } : { scale: 0.95, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        exit={side ? { x: "100%" } : { scale: 0.96, opacity: 0 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         className={
           side
             ? "h-full w-full max-w-xl overflow-y-auto border-l border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-8 text-slate-900 dark:text-white shadow-2xl"

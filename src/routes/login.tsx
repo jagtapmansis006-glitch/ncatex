@@ -19,14 +19,14 @@ import { setStoredUser } from "@/lib/auth";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "NCATEX 2026 – Conference Portal Login" },
+      { title: "NCATEX – Conference Portal Login" },
       {
         name: "description",
         content:
-          "Sign in to the NCATEX 2026 Student Submission or Academic Reviewer Portal.",
+          "Sign in to the NCATEX Student Submission or Academic Reviewer Portal.",
       },
-      { property: "og:title", content: "NCATEX 2026 – Conference Portal Login" },
-      { property: "og:description", content: "Student and admin / reviewer access to the NCATEX 2026 conference portal." },
+      { property: "og:title", content: "NCATEX – Conference Portal Login" },
+      { property: "og:description", content: "Student and admin / reviewer access to the NCATEX conference portal." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -78,7 +78,7 @@ function LoginPage() {
       setPassword("student123");
     } else {
       setEmail("admin@ncatex.edu");
-      setPassword("admin2026");
+      setPassword("admin123");
     }
   };
 
@@ -101,11 +101,11 @@ function LoginPage() {
           <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <img
               src="/assets/ncatex-logo.png"
-              alt="NCATEX 2026 Logo"
+              alt="NCATEX Logo"
               className="h-8 w-auto object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]"
             />
             <span className="font-display font-bold text-sm tracking-tight text-slate-900 dark:text-white">
-              NCATEX 2026
+              NCATEX
             </span>
           </Link>
           <ThemeToggle />
@@ -233,7 +233,7 @@ function LoginPage() {
                 <span>Remember session</span>
               </label>
               <span className="text-[11px] font-mono text-slate-400 dark:text-white/40">
-                NCATEX 2026 Auth
+                NCATEX Auth
               </span>
             </div>
 
@@ -295,7 +295,7 @@ function LoginPage() {
 
       {/* Footer */}
       <footer className="mx-auto w-full max-w-5xl py-4 text-center text-[11px] text-slate-500 dark:text-slate-400 relative z-10">
-        © 2026 2nd National Conference on Advanced Trends in Engineering (NCATEX) • All rights reserved.
+        © National Conference on Advanced Trends in Engineering (NCATEX) • All rights reserved.
       </footer>
     </div>
   );

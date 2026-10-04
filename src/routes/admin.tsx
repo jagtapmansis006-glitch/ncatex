@@ -62,16 +62,19 @@ import type { AdminTriageResult } from "@/services/ai-validation/types";
 import { AdminSidebar, type AdminTab } from "@/components/admin/AdminSidebar";
 import { AdminCharts } from "@/components/admin/AdminCharts";
 import { AdminDiagnostics } from "@/components/admin/AdminDiagnostics";
+import { Announcements } from "@/components/admin/Announcements";
+import { Settings as AdminSettings } from "@/components/admin/Settings";
+import { ReviewTriage } from "@/components/admin/ReviewTriage";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "NCATEX 2026 – Academic Administration & Manuscript Control Center" },
+      { title: "NCATEX – Academic Administration & Manuscript Control Center" },
       {
         name: "description",
         content:
-          "Official peer review, participant management, and paper administration control center for NCATEX 2026.",
+          "Official peer review, participant management, and paper administration control center for NCATEX.",
       },
     ],
   }),
@@ -162,7 +165,7 @@ const INITIAL_ANNOUNCEMENTS: Announcement[] = [
     title: "IEEE & Scopus Indexing Agreement Finalized",
     body: "All presented papers will proceed directly into indexed proceedings post-conference presentation.",
     category: "General",
-    date: "Feb 02, 2026",
+    date: "Feb 02",
     pinned: true,
   },
   {
@@ -170,7 +173,7 @@ const INITIAL_ANNOUNCEMENTS: Announcement[] = [
     title: "AI Format Audit Active on Manuscript Submissions",
     body: "Authors must ensure their uploaded PDF matches IEEE double-column margins to obtain instant format validation.",
     category: "Urgent",
-    date: "Jan 28, 2026",
+    date: "Jan 28",
     pinned: true,
   },
 ];
@@ -183,11 +186,11 @@ interface ConferenceDateItem {
 }
 
 const INITIAL_DATES: ConferenceDateItem[] = [
-  { id: "d1", label: "Call for Papers Opens", date: "Jan 15, 2026", status: "Completed" },
-  { id: "d2", label: "Paper Submission Deadline", date: "Feb 20, 2026", status: "Upcoming" },
-  { id: "d3", label: "Peer Review Notification", date: "Mar 05, 2026", status: "Scheduled" },
-  { id: "d4", label: "Camera-Ready Submission", date: "Mar 15, 2026", status: "Scheduled" },
-  { id: "d5", label: "Official Conference Days", date: "Apr 10–11, 2026", status: "Scheduled" },
+  { id: "d1", label: "Call for Papers Opens", date: "Jan 15", status: "Completed" },
+  { id: "d2", label: "Paper Submission Deadline", date: "Feb 20", status: "Upcoming" },
+  { id: "d3", label: "Peer Review Notification", date: "Mar 05", status: "Scheduled" },
+  { id: "d4", label: "Camera-Ready Submission", date: "Mar 15", status: "Scheduled" },
+  { id: "d5", label: "Official Conference Days", date: "Apr 10–11", status: "Scheduled" },
 ];
 
 // Color palette for charts adhering to conference theme
@@ -254,10 +257,10 @@ function AdminControlCenter() {
 
   // Website Content State
   const [contentConfig, setContentConfig] = useState({
-    heroTitle: "NCATEX 2026",
+    heroTitle: "NCATEX",
     heroSubtitle: "National Conference on Advanced Trends in Electronics and Telecommunication Engineering",
     venue: "NCATEX Campus / Hybrid Virtual",
-    dates: "April 10–11, 2026",
+    dates: "April 10–11",
   });
 
   useEffect(() => {
@@ -953,456 +956,26 @@ function AdminControlCenter() {
               TAB 3: 📝 REVIEW & TRIAGE (Reviewers, Weighted Scoring, Status Updates)
               ===================================================================== */}
           {activeTab === "review" && (
-            <div className="space-y-6">
-              {/* Top Overview: Weighted Criteria Scoring System */}
-              <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-white/5">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-teal-600 dark:text-teal-400">
-                      Standardized Evaluation Matrix
-                    </span>
-                    <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mt-0.5">
-                      Weighted Peer Review &amp; Scoring Calculator
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Innovation (25%) • Technical Quality (25%) • Methodology (20%) • Presentation (20%) • Impact (10%)
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Weighted Score</span>
-                      <p className="text-3xl font-bold font-display text-teal-600 dark:text-teal-400">
-                        {computedEvaluationScore}
-                        <span className="text-xs text-slate-400 font-normal"> / 100</span>
-                      </p>
-                    </div>
-
-                    <span
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider ${
-                        computedEvaluationScore >= 75
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                          : computedEvaluationScore >= 60
-                            ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30"
-                            : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
-                      }`}
-                    >
-                      {computedEvaluationScore >= 75
-                        ? "Recommendation: Accept"
-                        : computedEvaluationScore >= 60
-                          ? "Recommendation: Revision"
-                          : "Recommendation: Reject"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Interactive Criteria Sliders */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-5 pt-5">
-                  {[
-                    { key: "innovation", label: "Innovation (25%)", weight: 0.25 },
-                    { key: "technicalQuality", label: "Tech Quality (25%)", weight: 0.25 },
-                    { key: "methodology", label: "Methodology (20%)", weight: 0.2 },
-                    { key: "presentation", label: "Presentation (20%)", weight: 0.2 },
-                    { key: "impact", label: "Impact (10%)", weight: 0.1 },
-                  ].map((crit) => {
-                    const val = (evaluationScores as any)[crit.key];
-                    return (
-                      <div key={crit.key} className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-700 dark:text-slate-300">{crit.label}</span>
-                          <span className="font-mono text-teal-600 dark:text-teal-400">{val}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={val}
-                          onChange={(e) =>
-                            setEvaluationScores((prev) => ({
-                              ...prev,
-                              [crit.key]: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-teal-500 cursor-pointer"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Reviewer Committee Directory */}
-              <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
-                  <div>
-                    <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
-                      Technical Review Committee
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Track reviewer assignments, double-blind progress, and peer evaluation completion
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300">
-                    {reviewers.length} Active Reviewers
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {reviewers.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50/50 dark:bg-white/[0.02] p-4 space-y-2 hover:border-teal-500/40 transition"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold text-slate-900 dark:text-white text-xs">{rev.name}</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{rev.email}</p>
-                        </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400">
-                          ⭐ {rev.rating}
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-teal-700 dark:text-teal-300 truncate font-medium">
-                        {rev.track}
-                      </p>
-
-                      <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-200/60 dark:border-white/5">
-                        <span className="text-slate-500 text-[11px]">
-                          Assigned: <strong>{rev.assignedCount}</strong>
-                        </span>
-                        <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
-                          Done: {rev.completedCount}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ReviewTriage onShowToast={showToast} />
           )}
 
           {/* =====================================================================
               TAB 4: 📢 ANNOUNCEMENTS & DATES (Manager & Live Homepage Sync)
               ===================================================================== */}
           {activeTab === "announcements" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Announcements Manager */}
-              <div className="lg:col-span-7 space-y-5">
-                <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm space-y-4">
-                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <Megaphone size={18} className="text-teal-500" />
-                    <span>Create Conference Announcement</span>
-                  </h3>
-
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Announcement Title *"
-                      value={newAnnouncement.title}
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-teal-500"
-                    />
-
-                    <textarea
-                      rows={3}
-                      placeholder="Detailed Announcement Body *"
-                      value={newAnnouncement.body}
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, body: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-teal-500"
-                    />
-
-                    <div className="flex items-center justify-between pt-1">
-                      <select
-                        value={newAnnouncement.category}
-                        onChange={(e) =>
-                          setNewAnnouncement({
-                            ...newAnnouncement,
-                            category: e.target.value as Announcement["category"],
-                          })
-                        }
-                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 text-xs font-semibold cursor-pointer"
-                      >
-                        <option value="General">General</option>
-                        <option value="Urgent">Urgent</option>
-                        <option value="Deadline">Deadline</option>
-                        <option value="Keynote">Keynote</option>
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!newAnnouncement.title.trim() || !newAnnouncement.body.trim()) {
-                            alert("Please fill in title and body.");
-                            return;
-                          }
-                          const item: Announcement = {
-                            id: `ann-${Date.now()}`,
-                            title: newAnnouncement.title.trim(),
-                            body: newAnnouncement.body.trim(),
-                            category: newAnnouncement.category,
-                            date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
-                            pinned: newAnnouncement.pinned,
-                          };
-                          setAnnouncements([item, ...announcements]);
-                          setNewAnnouncement({ title: "", body: "", category: "General", pinned: false });
-                          showToast("Announcement published successfully.");
-                        }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-black text-xs font-semibold hover:opacity-90 active:scale-95 transition cursor-pointer"
-                      >
-                        <Plus size={14} />
-                        <span>Publish Announcement</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Published Announcements List */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Live Active Announcements ({announcements.length})
-                  </h4>
-                  {announcements.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-4 text-xs space-y-1.5 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400">
-                          {a.category} • {a.date}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setAnnouncements(announcements.filter((x) => x.id !== a.id))}
-                          className="text-slate-400 hover:text-rose-500 transition cursor-pointer"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                      <h4 className="font-bold text-slate-900 dark:text-white text-sm">{a.title}</h4>
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{a.body}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right Column: Important Dates Manager */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
-                    <div>
-                      <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                        <Calendar size={18} className="text-teal-500" />
-                        <span>Important Dates Manager</span>
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Synchronized live with homepage timeline
-                      </p>
-                    </div>
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  </div>
-
-                  <div className="space-y-3">
-                    {datesList.map((d, idx) => (
-                      <div
-                        key={d.id}
-                        className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] p-3 text-xs space-y-2"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono text-slate-400 font-bold">
-                            Milestone 0{idx + 1}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                              d.status === "Completed"
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                : d.status === "Upcoming"
-                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                  : "bg-slate-100 dark:bg-white/10 text-slate-400"
-                            }`}
-                          >
-                            {d.status}
-                          </span>
-                        </div>
-
-                        <input
-                          type="text"
-                          value={d.label}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setDatesList(datesList.map((x) => (x.id === d.id ? { ...x, label: val } : x)));
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-semibold text-slate-900 dark:text-white"
-                        />
-
-                        <input
-                          type="text"
-                          value={d.date}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setDatesList(datesList.map((x) => (x.id === d.id ? { ...x, date: val } : x)));
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 text-xs text-slate-600 dark:text-slate-300 font-mono"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => showToast("Homepage dates schedule synchronized.")}
-                    className="w-full py-2.5 rounded-xl bg-teal-600 text-white dark:bg-teal-500 dark:text-black text-xs font-semibold transition hover:opacity-90 active:scale-95 cursor-pointer"
-                  >
-                    Sync Dates Live to Conference Site
-                  </button>
-                </div>
-              </div>
-            </div>
+            <Announcements onShowToast={showToast} />
           )}
 
           {/* =====================================================================
               TAB 5: ⚙️ SETTINGS & SYSTEM (CSV/Excel Compendium, Certificates, Content)
               ===================================================================== */}
           {activeTab === "settings" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Data Export & Reports */}
-              <div className="lg:col-span-6 space-y-6">
-                <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm space-y-4">
-                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <Download size={18} className="text-teal-500" />
-                    <span>Comprehensive Data Export</span>
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Generate instant export compendiums for institutional indexing, IEEE proceedings, and conference secretariat records.
-                  </p>
-
-                  <div className="space-y-2.5 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleExportCSV(papers, "ncatex-all-papers-compendium.csv")}
-                      className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-[#1f2430] hover:border-teal-500/50 bg-slate-50 dark:bg-white/[0.02] text-xs font-semibold transition cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText size={15} className="text-teal-500" />
-                        <span>Export All Submitted Papers ({papers.length})</span>
-                      </div>
-                      <Download size={14} className="text-slate-400" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleExportCSV(
-                          papers.filter((p) => p.status === "Accepted"),
-                          "ncatex-accepted-for-proceedings.csv",
-                        )
-                      }
-                      className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-[#1f2430] hover:border-teal-500/50 bg-slate-50 dark:bg-white/[0.02] text-xs font-semibold transition cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 size={15} className="text-emerald-500" />
-                        <span>Export Accepted Papers for Proceedings ({metrics.accepted})</span>
-                      </div>
-                      <Download size={14} className="text-slate-400" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Certificate Verification System */}
-                <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm space-y-4">
-                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <FileCheck size={18} className="text-teal-500" />
-                    <span>Certificate Management &amp; Verification</span>
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Automatic verification ID generator for presentation and acceptance certificates.
-                  </p>
-
-                  <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/10 text-xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-teal-800 dark:text-teal-300">
-                        Verification ID Pattern:
-                      </span>
-                      <span className="font-mono text-[11px] font-bold bg-white/20 px-2 py-0.5 rounded">
-                        NCATEX-2026-CERT-XXXXX
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-teal-700 dark:text-teal-300/80">
-                      Eligible accepted papers: {metrics.accepted}. Authors can verify authenticity directly through the public tracking portal.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Live Website Content Settings */}
-              <div className="lg:col-span-6 space-y-6">
-                <div className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0c0e14] p-6 shadow-sm space-y-4">
-                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <Settings size={18} className="text-teal-500" />
-                    <span>Website Content &amp; Meta Settings</span>
-                  </h3>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Hero Main Title:
-                      </label>
-                      <input
-                        type="text"
-                        value={contentConfig.heroTitle}
-                        onChange={(e) => setContentConfig({ ...contentConfig, heroTitle: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 font-semibold text-slate-900 dark:text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Hero Subtitle:
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={contentConfig.heroSubtitle}
-                        onChange={(e) => setContentConfig({ ...contentConfig, heroSubtitle: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-200"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Dates:
-                        </label>
-                        <input
-                          type="text"
-                          value={contentConfig.dates}
-                          onChange={(e) => setContentConfig({ ...contentConfig, dates: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-200 font-mono"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Venue:
-                        </label>
-                        <input
-                          type="text"
-                          value={contentConfig.venue}
-                          onChange={(e) => setContentConfig({ ...contentConfig, venue: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1f2430] bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-200"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => showToast("Website content configuration updated.")}
-                      className="w-full mt-2 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-black font-semibold hover:opacity-90 active:scale-95 transition cursor-pointer"
-                    >
-                      Save Website Content Changes
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AdminSettings
+              papers={papers}
+              acceptedCount={metrics.accepted}
+              onShowToast={showToast}
+              onExportCSV={handleExportCSV}
+            />
           )}
         </main>
       </div>

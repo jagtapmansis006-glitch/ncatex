@@ -84,7 +84,7 @@ export class AdminReviewTriageService {
     isPdf: boolean;
   }): Promise<AdminTriageResult> {
     const prompt = `
-You are the Technical Program Committee (TPC) Chair and Chief Academic Editor for the 2nd National Conference on Advanced Trends in Engineering (NCATEX 2026).
+You are the Technical Program Committee (TPC) Chair and Chief Academic Editor for the 2nd National Conference on Advanced Trends in Engineering (NCATEX).
 You are conducting executive triage and rigorous peer review on a submitted manuscript.
 
 [SUBMISSION DETAILS]:
@@ -288,7 +288,7 @@ ${extractedDocText ? `\n[MANUSCRIPT BODY / EXTRACTED CONTENT]:\n${extractedDocTe
         overallAssessmentScore,
       },
       analysis: {
-        contentQualityAssessment: `The manuscript demonstrates ${condition.toLowerCase()} academic writing and problem presentation for the NCATEX 2026 conference.`,
+        contentQualityAssessment: `The manuscript demonstrates ${condition.toLowerCase()} academic writing and problem presentation for the NCATEX conference.`,
         technicalDepthAssessment: `Technical rigor evaluated at ${technicalDepthScore}/10 with ${matchedKeywords.length} core engineering domain signals recognized.`,
         methodologicalEvaluation: `Methodology is categorized as ${condition.toLowerCase()}; recommendations target verifiable baselines and reproducibility.`,
         strengths,

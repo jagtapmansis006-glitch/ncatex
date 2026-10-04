@@ -13,6 +13,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../context/ThemeContext";
+import { SettingsProvider } from "../context/SettingsContext";
+import { AnnouncementsProvider } from "../context/AnnouncementsContext";
 
 function NotFoundComponent() {
   return (
@@ -77,6 +79,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
+      { title: "NCATEX - National Conference on Advanced Trends in Electronics and Telecommunication Engineering" },
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { property: "og:type", content: "website" },
@@ -142,10 +145,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <div className="page-transition min-h-screen">
-          <Outlet />
-        </div>
+        <SettingsProvider>
+          <AnnouncementsProvider>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <div className="page-transition min-h-screen">
+              <Outlet />
+            </div>
+          </AnnouncementsProvider>
+        </SettingsProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

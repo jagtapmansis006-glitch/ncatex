@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { handleAiValidationRequest } from "./server/ai-validation-middleware";
+import { handleAdminApiRequest } from "./server/admin-api";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -56,6 +57,9 @@ export default {
       ) {
         return Response.redirect(new URL("/assets/circuit-hero.mp4", request.url), 302);
       }
+
+      const adminApiResponse = await handleAdminApiRequest(request);
+      if (adminApiResponse) return adminApiResponse;
 
       const aiResponse = await handleAiValidationRequest(request);
       if (aiResponse) return aiResponse;

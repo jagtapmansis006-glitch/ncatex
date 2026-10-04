@@ -56,14 +56,14 @@ export function Tracks({ onSelectTrack }: TracksProps) {
       {/* Section Header */}
       <div className="mb-14">
         <span className="inline-block rounded-full bg-teal-500/10 dark:bg-teal-500/15 border border-teal-500/20 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-teal-800 dark:text-teal-300">
-          Call for Papers 2026
+          Call for Papers
         </span>
         <h2 className="mt-3.5 text-4xl font-light tracking-tight text-slate-900 dark:text-white font-display md:text-5xl">
           Five Tracks.{" "}
           <span className="font-semibold text-slate-900 dark:text-white">One Frontier.</span>
         </h2>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-400">
-          Explore the five core technical domains of NCATEX 2026. Submit your original scholarly
+          Explore the five core technical domains of NCATEX. Submit your original scholarly
           research for peer review and indexed publication.
         </p>
       </div>
@@ -79,9 +79,8 @@ export function Tracks({ onSelectTrack }: TracksProps) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.08, duration: 0.6 }}
-              whileHover={{ scale: 1.02, y: -6 }}
               onClick={() => onSelectTrack?.(t.fullName)}
-              className="group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-7 shadow-sm transition-all duration-300 hover:border-teal-500/40 dark:hover:border-teal-500/40 hover:shadow-xl dark:hover:shadow-teal-500/5 cursor-pointer overflow-hidden"
+              className="card-antigravity group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-7 shadow-sm hover:border-teal-500/50 dark:hover:border-teal-500/50 cursor-pointer overflow-hidden"
             >
               {/* Subtle top border accent glow on hover */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

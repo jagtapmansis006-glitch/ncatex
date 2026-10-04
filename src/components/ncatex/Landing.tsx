@@ -28,7 +28,7 @@ export function SiteNav({ onSubmit }: { onSubmit: () => void }) {
     <header className="sticky top-0 z-50 border-b border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#090D16]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <a href="#top" className="text-lg font-bold tracking-tight">
-          NCATEX <span className="text-teal-600 dark:text-teal-400">2026</span>
+          NCATEX
         </a>
         <nav className="hidden items-center gap-7 md:flex">
           {LINKS.map(([l, h]) => (
@@ -117,7 +117,7 @@ export function LandingHero({ onSubmit }: { onSubmit: () => void }) {
         className="relative mx-auto flex max-w-4xl flex-col items-center text-center"
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-800 dark:text-teal-300">
-          <CalendarDays size={14} /> Mar 27–28, 2026 · Pune, India
+          <CalendarDays size={14} /> Mar 27–28 · Pune, India
         </span>
         <h1 className="mt-6 text-4xl font-light tracking-tight md:text-6xl">
           2nd National Conference on <span className="font-semibold">Advanced Trends in Electronics &amp; Telecommunication</span>
@@ -137,11 +137,11 @@ export function LandingHero({ onSubmit }: { onSubmit: () => void }) {
 }
 
 const INFO = [
-  [CalendarDays, "Date", "Mar 27–28, 2026"],
+  [CalendarDays, "Date", "Mar 27–28"],
   [MapPin, "Venue", "Pune, India"],
   [GraduationCap, "Eligibility", "UG, PG, PhD & faculty"],
   [Trophy, "Awards", "Best paper per track"],
-  [Clock, "Registration Deadline", "Feb 20, 2026"],
+  [Clock, "Registration Deadline", "Feb 20"],
 ] as const;
 
 export function QuickInfoBar() {

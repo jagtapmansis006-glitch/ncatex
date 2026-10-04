@@ -117,7 +117,7 @@ export class StudentDocumentValidator {
     fileSizeBytes: number;
   }): Promise<StudentValidationResult> {
     const promptInstructions = `
-You are the Academic Formatting & Document Quality Auditor for the 2nd National Conference on Advanced Trends in Engineering (NCATEX 2026).
+You are the Academic Formatting & Document Quality Auditor for the 2nd National Conference on Advanced Trends in Engineering (NCATEX).
 A student has uploaded their manuscript (${filename}).
 
 Your task:
@@ -290,7 +290,7 @@ Your task:
       formattingFeedback.push("Document file size is suspiciously small (< 2KB), check if content was omitted.");
     } else {
       formattingFeedback.push("Standard conference margins (0.75 in / 1.9 cm) detected.");
-      formattingFeedback.push("Column layout conforms to NCATEX 2026 conference standard.");
+      formattingFeedback.push("Column layout conforms to NCATEX conference standard.");
     }
 
     // Font evaluation

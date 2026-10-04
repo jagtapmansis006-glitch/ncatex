@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -16,18 +16,34 @@ import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
 import { Hero } from "@/components/hero/Hero";
 import { Tracks } from "@/components/common/Tracks";
+import { Reviews } from "@/components/common/Reviews";
+import { CountUp } from "@/components/common/CountUp";
 import { SubmitModal, TrackModal } from "@/components/common/Panels";
+import { StudentDashboard } from "@/components/student/StudentDashboard";
+import { Overview } from "@/components/ncatex/Overview";
+import { useAnnouncements } from "@/context/AnnouncementsContext";
+import { getStoredUser, useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    if (typeof window !== "undefined") {
+      const user = getStoredUser();
+      if (!user) {
+        throw redirect({
+          to: "/login",
+        });
+      }
+    }
+  },
   head: () => ({
     meta: [
-      { title: "NCATEX 2026 – 2nd National Conference on Advanced Trends in Engineering" },
+      { title: "NCATEX - National Conference on Advanced Trends in Electronics and Telecommunication Engineering" },
       {
         name: "description",
         content:
-          "2nd National Conference on Advanced Trends in Engineering (NCATEX 2026). Peer-reviewed scholarly paper submissions across AI/ML, VLSI, 5G, IoT, and Signal Processing.",
+          "National Conference on Advanced Trends in Electronics and Telecommunication Engineering (NCATEX). Peer-reviewed scholarly paper submissions across AI/ML, VLSI, 5G, IoT, and Signal Processing.",
       },
-      { property: "og:title", content: "NCATEX 2026 – Advanced Trends in Engineering" },
+      { property: "og:title", content: "NCATEX - National Conference on Advanced Trends in Electronics and Telecommunication Engineering" },
       {
         name: "og:description",
         content: "Peer-reviewed academic conference submissions across 5 major engineering tracks.",
@@ -43,7 +59,7 @@ const QUICK_INFO_ITEMS = [
   {
     icon: Calendar,
     label: "Date",
-    value: "April 10–11, 2026",
+    value: "April 10–11",
     detail: "Hybrid Technical Sessions",
   },
   {
@@ -75,7 +91,7 @@ const QUICK_INFO_ITEMS = [
 const TIMELINE_MILESTONES = [
   {
     id: "m1",
-    date: "Jan 15, 2026",
+    date: "Jan 15",
     title: "Call for Papers Opens",
     description: "Official submission portal initialized across all 5 conference research tracks.",
     status: "COMPLETED",
@@ -83,7 +99,7 @@ const TIMELINE_MILESTONES = [
   },
   {
     id: "m2",
-    date: "Feb 20, 2026",
+    date: "Feb 20",
     title: "Paper Submission Deadline",
     description: "Strict deadline for full manuscript submission (IEEE 2-column format, max 6 pages).",
     status: "UPCOMING",
@@ -92,7 +108,7 @@ const TIMELINE_MILESTONES = [
   },
   {
     id: "m3",
-    date: "Mar 05, 2026",
+    date: "Mar 05",
     title: "Peer Review & Acceptance Notification",
     description: "Formal double-blind evaluation reports and acceptance notices issued to authors.",
     status: "SCHEDULED",
@@ -100,7 +116,7 @@ const TIMELINE_MILESTONES = [
   },
   {
     id: "m4",
-    date: "Mar 15, 2026",
+    date: "Mar 15",
     title: "Camera-Ready Manuscript Submission",
     description: "Submission of finalized manuscripts incorporating reviewer feedback and copyright forms.",
     status: "SCHEDULED",
@@ -108,7 +124,7 @@ const TIMELINE_MILESTONES = [
   },
   {
     id: "m5",
-    date: "Apr 10–11, 2026",
+    date: "Apr 10–11",
     title: "Official Conference Sessions",
     description: "Oral presentation sessions, keynote addresses, track discussions, and award presentations.",
     status: "SCHEDULED",
@@ -119,28 +135,44 @@ const TIMELINE_MILESTONES = [
 const FAQ_ITEMS = [
   {
     q: "Who is eligible to submit manuscripts?",
-    a: "Postgraduate researchers, academic faculty, PhD scholars, and corporate R&D engineers working in electronics, telecommunication, and computing disciplines.",
+    a: "Authors across academia and industry are eligible to submit original research. Qualifying categories include:\n• Academic Faculty & Postdoctoral Researchers\n• Doctoral Scholars & Postgraduate Students (PhD / MS / MTech)\n• Corporate R&D Engineers & Industry Practitioners working in electronics, telecommunication, and computing disciplines.",
   },
   {
     q: "What formatting and length standards are enforced?",
-    a: "Manuscripts must strictly adhere to the IEEE double-column template (maximum 6 pages inclusive of figures, citations, and biographies) in PDF format.",
+    a: "All submissions must strictly adhere to verified academic guidelines:\n• Template: Standard IEEE double-column format (Letter / A4 size).\n• Length Limit: Maximum 6 pages inclusive of all figures, tables, mathematical formulations, and bibliographical references.\n• Format: Adobe Acrobat PDF only with all fonts fully embedded.",
   },
   {
     q: "Are registration fees required upon submission?",
-    a: "No fees are required to submit manuscripts for initial peer review. Registration fees apply only following formal acceptance notification.",
+    a: "No fees are required to submit manuscripts for initial double-blind peer review or AI pre-flight audit. Registration fees apply only following formal acceptance notification for presentation and proceedings publication.",
   },
   {
     q: "Where will accepted papers be indexed?",
-    a: "All accepted and presented papers will be submitted for inclusion in indexed conference proceedings (Scopus / IEEE standards).",
+    a: "All accepted and presented manuscripts will be submitted for inclusion in indexed conference proceedings (Scopus, IEEE Standards, Google Scholar, and UGC-CARE listings).",
   },
   {
     q: "How does the AI manuscript format audit work?",
-    a: "When you upload your PDF in the submission modal, our Gemini-powered audit agent instantly verifies page margins, font compliance, column layouts, and mandatory sections (Abstract, Introduction, References) before submission.",
+    a: "When you upload your PDF in the submission modal, our Gemini-powered audit agent instantly verifies page margins, font compliance, two-column layout fidelity, and mandatory sections (Abstract, Introduction, Methodology, and References) in under 3 seconds before submission.",
   },
 ];
 
 function Index() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to login if user session is absent
+  useEffect(() => {
+    if (typeof window !== "undefined" && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [user, navigate]);
+
   // Explicit modal state management across landing page, hero, tracks, and navbar
+  let announcementsList: any[] = [];
+  try {
+    const annCtx = useAnnouncements();
+    announcementsList = annCtx.announcements || [];
+  } catch {}
+
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<string | undefined>(undefined);
@@ -195,8 +227,9 @@ function Index() {
                 key={item.label}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -6 }}
                 transition={{ delay: idx * 0.06, duration: 0.5 }}
-                className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white/95 dark:bg-[#0f1117]/95 backdrop-blur-xl p-4 sm:p-4.5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-teal-500/40 dark:hover:border-teal-500/40 hover:shadow-md flex flex-col justify-between group"
+                className="card-antigravity rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white/95 dark:bg-[#0f1117]/95 backdrop-blur-xl p-4 sm:p-4.5 shadow-sm hover:border-teal-500/50 dark:hover:border-teal-500/50 flex flex-col justify-between group cursor-default"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -220,53 +253,20 @@ function Index() {
         </div>
       </section>
 
-      {/* About / Overview Section */}
-      <section
-        id="overview"
-        className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 py-20 md:grid-cols-2 scroll-mt-20"
-      >
-        <div>
-          <span className="inline-block rounded-full bg-teal-500/10 dark:bg-teal-500/15 border border-teal-500/20 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-teal-800 dark:text-teal-300">
-            Academic Scope
-          </span>
-          <h2 className="mt-4 text-4xl font-light tracking-tight text-slate-900 dark:text-white font-display md:text-5xl">
-            About the{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">Conference</span>
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-400">
-            NCATEX 2026 convenes distinguished researchers, doctoral scholars, and industry
-            innovators to disseminate groundbreaking technical contributions shaping the future of
-            electronics, telecommunication, and autonomous systems.
-          </p>
-        </div>
+      {/* Student Portal Dashboard & Official Announcements Bulletin */}
+      {user?.role === "student" && (
+        <section id="student-portal" className="scroll-mt-20 my-2">
+          <StudentDashboard
+            onOpenSubmit={() => handleOpenSubmit()}
+            onOpenTrack={() => handleOpenTrack()}
+          />
+        </section>
+      )}
 
-        <div className="flex flex-col justify-between">
-          <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400">
-            Each submitted manuscript undergoes rigorous double-blind peer review by an
-            international technical committee, ensuring exceptional scientific rigor,
-            reproducibility, and industrial relevance.
-          </p>
-          <div className="grid grid-cols-3 gap-4 pt-6">
-            {[
-              ["5", "Research Tracks"],
-              ["40+", "Keynote Speakers"],
-              ["2", "Conference Days"],
-            ].map(([n, l]) => (
-              <div
-                key={l}
-                className="rounded-2xl border border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-teal-500/30"
-              >
-                <p className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-display">
-                  {n}
-                </p>
-                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{l}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* About the Conference High-Tech Overview Section */}
+      <Overview />
 
-      {/* Standardized Cards Section 01–05 without glitchy black squares */}
+      {/* Standardized Cards Section 01–05 */}
       <Tracks onSelectTrack={(track) => handleOpenSubmit(track)} />
 
       {/* Important Dates Visual Timeline Section */}
@@ -288,7 +288,38 @@ function Index() {
             </p>
           </div>
 
+          {/* Active Announcements Live Ticker / Bulletin inside Schedule Section */}
+          {announcementsList && announcementsList.length > 0 && (
+            <div className="mb-12 rounded-3xl border border-teal-500/30 bg-teal-500/10 p-5 sm:p-6 text-white space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-teal-300 font-semibold text-xs uppercase tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
+                  <span>Official Announcements &amp; Real-Time Broadcasts</span>
+                </div>
+                <span className="text-[11px] text-teal-300/80 font-mono">Live Sync</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {announcementsList.slice(0, 4).map((a) => (
+                  <div
+                    key={a.id}
+                    className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 space-y-2 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                        {a.tag || a.category || "ANNOUNCEMENT"}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">{a.date}</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white leading-snug">{a.title}</h4>
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">{a.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Visual Connected Timeline */}
+
           <div className="relative pl-6 sm:pl-8 border-l-2 border-teal-500/30 space-y-8 ml-3 sm:ml-4">
             {TIMELINE_MILESTONES.map((item, idx) => {
               const isUpcoming = item.isUpcoming;
@@ -388,9 +419,23 @@ function Index() {
         </div>
       </section>
 
-      {/* Expandable FAQ Accordion Section */}
-      <section id="faq" className="mx-auto max-w-4xl px-4 sm:px-6 py-24 scroll-mt-20">
-        <div className="mb-12 text-center">
+      {/* Peer Reviews & Community Endorsements Section */}
+      <Reviews />
+
+      {/* Expandable FAQ Accordion Section (Centered 800px Layout) */}
+      <section
+        id="faq"
+        className="px-4 sm:px-6 py-24 scroll-mt-20 w-full"
+        style={{
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          width: "100%",
+          maxWidth: "800px",
+        }}
+      >
+        <div className="mb-12 text-center w-full">
           <span className="inline-block rounded-full bg-teal-500/10 dark:bg-teal-500/15 border border-teal-500/20 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-teal-800 dark:text-teal-300">
             Author Guidance
           </span>
@@ -403,14 +448,14 @@ function Index() {
           </p>
         </div>
 
-        <div className="space-y-3.5">
+        <div className="space-y-3.5 w-full">
           {FAQ_ITEMS.map((item, i) => {
             const isOpen = openFaq === i;
 
             return (
               <div
                 key={item.q}
-                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                className={`card-antigravity rounded-2xl border transition-all duration-200 overflow-hidden w-full ${
                   isOpen
                     ? "border-teal-500/50 bg-white dark:bg-[#0f1117] shadow-md dark:shadow-teal-500/5"
                     : "border-slate-200 dark:border-[#1f2430] bg-white dark:bg-[#0f1117] hover:border-teal-500/30"
@@ -442,10 +487,24 @@ function Index() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     >
-                      <div className="px-5 pb-5 sm:px-6 sm:pb-6 text-sm leading-relaxed text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-white/5 pt-4">
-                        {item.a}
+                      <div
+                        className="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-white/5 pt-4 space-y-1.5"
+                        style={{ lineHeight: 1.6 }}
+                      >
+                        {item.a.split("\n").map((line, lIdx) => (
+                          <p
+                            key={lIdx}
+                            className={
+                              line.startsWith("•")
+                                ? "pl-2 font-medium text-slate-700 dark:text-slate-200"
+                                : ""
+                            }
+                          >
+                            {line}
+                          </p>
+                        ))}
                       </div>
                     </motion.div>
                   )}
