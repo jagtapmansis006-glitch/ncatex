@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../context/ThemeContext";
 import { SettingsProvider } from "../context/SettingsContext";
 import { AnnouncementsProvider } from "../context/AnnouncementsContext";
+import { ErrorBoundary } from "../components/common/ErrorBoundary";
 
 function NotFoundComponent() {
   return (
@@ -143,17 +144,19 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <SettingsProvider>
-          <AnnouncementsProvider>
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <div className="page-transition min-h-screen">
-              <Outlet />
-            </div>
-          </AnnouncementsProvider>
-        </SettingsProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <SettingsProvider>
+            <AnnouncementsProvider>
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <div className="page-transition min-h-screen">
+                <Outlet />
+              </div>
+            </AnnouncementsProvider>
+          </SettingsProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

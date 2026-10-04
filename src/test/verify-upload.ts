@@ -7,7 +7,8 @@ async function runVerification() {
   console.log("       LIVE API VERIFICATION & DOCUMENT UPLOAD PIPELINE        ");
   console.log("================================================================");
   console.log("Active Gemini Model:       ", GEMINI_MODEL);
-  console.log("GEMINI_API_KEY Configured: ", Boolean(process.env["GEMINI_API_KEY"]));
+  const envKey = (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.["GEMINI_API_KEY"];
+  console.log("GEMINI_API_KEY Configured: ", Boolean(envKey));
 
   const compliantPdfContent =
     "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R >>\nstream\nBT\n/F1 12 Tf\n" +

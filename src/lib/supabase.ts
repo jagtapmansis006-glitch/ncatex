@@ -1,17 +1,24 @@
 import { createClient } from "@supabase/supabase-js";
 
 function getEnvVar(key: string): string | undefined {
-  if (typeof process !== "undefined" && process.env && process.env[key]) {
-    return process.env[key];
-  }
   try {
-    const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
-    if (metaEnv && metaEnv[key]) {
+    const metaEnv = (import.meta as unknown as { env?: Record<string, string | undefined> })?.env;
+    if (metaEnv?.[key]) {
       return metaEnv[key];
     }
   } catch {
     // Ignore in non-Vite environments
   }
+
+  try {
+    const procEnv = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } })?.process?.env;
+    if (procEnv?.[key]) {
+      return procEnv[key];
+    }
+  } catch {
+    // Ignore in non-Node environments
+  }
+
   return undefined;
 }
 

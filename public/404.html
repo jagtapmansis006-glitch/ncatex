@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>NCATEX - Redirecting</title>
+    <script>
+      // Single Page Application routing redirect for static hosts
+      sessionStorage.redirect = location.href;
+      var path = location.pathname;
+      var search = location.search;
+      var hash = location.hash;
+      location.replace('/' + (path ? '#' + path : '') + search + hash);
+    </script>
+    <meta http-equiv="refresh" content="0;URL='/'" />
+  </head>
+  <body>
+    <p>Redirecting to <a href="/">NCATEX Homepage</a>...</p>
+  </body>
+</html>

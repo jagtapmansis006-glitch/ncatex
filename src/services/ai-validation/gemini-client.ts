@@ -14,21 +14,22 @@ export function resolveGeminiApiKey(customKey?: string): string | null {
     return customKey.trim();
   }
 
-  // Node process.env check
-  if (typeof process !== "undefined" && process.env) {
-    const geminiEnv = process.env["GEMINI_API_KEY"];
-    if (geminiEnv) return geminiEnv;
-    const viteGeminiEnv = process.env["VITE_GEMINI_API_KEY"];
-    if (viteGeminiEnv) return viteGeminiEnv;
-  }
-
-  // Vite import.meta.env check
+  // Vite import.meta.env check with safe optional chaining
   try {
-    const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
+    const metaEnv = (import.meta as unknown as { env?: Record<string, string | undefined> })?.env;
     if (metaEnv?.["VITE_GEMINI_API_KEY"]) return metaEnv["VITE_GEMINI_API_KEY"];
     if (metaEnv?.["GEMINI_API_KEY"]) return metaEnv["GEMINI_API_KEY"];
   } catch {
     // Ignore in non-Vite environments
+  }
+
+  // Node global process.env check via safe globalThis
+  try {
+    const procEnv = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } })?.process?.env;
+    if (procEnv?.["VITE_GEMINI_API_KEY"]) return procEnv["VITE_GEMINI_API_KEY"];
+    if (procEnv?.["GEMINI_API_KEY"]) return procEnv["GEMINI_API_KEY"];
+  } catch {
+    // Ignore in non-Node environments
   }
 
   return null;
