@@ -113,10 +113,22 @@ function RootShell({ children }: { children: ReactNode }) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              window.global = window;
+              window.process = window.process || { env: {} };
+              window.$_TSR = window.$_TSR || {
+                h: function() { this.hydrated = true; },
+                e: function() { this.streamEnded = true; },
+                c: function() {},
+                p: function(s) { if (!this.initialized) { this.buffer.push(s); } else { s(); } },
+                buffer: [],
+                t: new Map(),
+                initialized: true,
+                router: { manifest: {}, matches: [] }
+              };
               try {
-                var t = localStorage.getItem('ncatex_theme');
-                var isDark = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                if (t === 'light') isDark = false;
+                var themeVal = localStorage.getItem('ncatex_theme');
+                var isDark = themeVal === 'dark' || (!themeVal && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (themeVal === 'light') isDark = false;
                 if (isDark) {
                   document.documentElement.classList.add('dark');
                   document.documentElement.setAttribute('data-theme', 'dark');

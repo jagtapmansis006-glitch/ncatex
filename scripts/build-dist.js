@@ -47,6 +47,16 @@ const htmlContent = `<!doctype html>
     <script>
       window.global = window;
       window.process = window.process || { env: {} };
+      window.$_TSR = window.$_TSR || {
+        h: function () { this.hydrated = true; },
+        e: function () { this.streamEnded = true; },
+        c: function () {},
+        p: function (s) { if (!this.initialized) { this.buffer.push(s); } else { s(); } },
+        buffer: [],
+        t: new Map(),
+        initialized: true,
+        router: { manifest: {}, matches: [] }
+      };
     </script>
     ${cssFile ? `<link rel="stylesheet" crossorigin href="/assets/${cssFile}">` : ""}
   </head>

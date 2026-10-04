@@ -1,8 +1,18 @@
-// Polyfill global and process for third-party dependencies in the browser
+// Polyfill global, process, and $_TSR for third-party dependencies and TanStack Router hydration
 if (typeof window !== "undefined") {
-  (window as unknown as { global?: unknown }).global = window;
-  (window as unknown as { process?: { env?: Record<string, string> } }).process =
-    (window as unknown as { process?: { env?: Record<string, string> } }).process || { env: {} };
+  const win = window as any;
+  win.global = window;
+  win.process = win.process || { env: {} };
+  win.$_TSR = win.$_TSR || {
+    h: function () { this.hydrated = true; },
+    e: function () { this.streamEnded = true; },
+    c: function () {},
+    p: function (s: any) { if (!this.initialized) { this.buffer.push(s); } else { s(); } },
+    buffer: [],
+    t: new Map(),
+    initialized: true,
+    router: { manifest: {}, matches: [] },
+  };
 }
 
 import React from "react";
