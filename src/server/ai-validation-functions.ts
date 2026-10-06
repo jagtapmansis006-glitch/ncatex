@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { studentDocumentValidator } from "../services/ai-validation/student-validator";
 import { adminReviewTriageService } from "../services/ai-validation/admin-triage";
+import { runPlagiarismScan, type PlagiarismCheckResult } from "../services/ai-validation/plagiarism-scanner";
 import type { StudentValidationResult, AdminTriageResult } from "../services/ai-validation/types";
 import { supabase, type PaperRecord } from "../lib/supabase";
 
@@ -48,6 +49,7 @@ export interface PaperSubmissionResult {
   pdfUrl: string;
   storagePath: string;
   validationResult: StudentValidationResult;
+  plagiarismResult?: PlagiarismCheckResult;
 }
 
 /**
@@ -179,10 +181,19 @@ export async function submitPaperHandler(
     throw new Error(errorMsg);
   }
 
+  // Step 3.5: Run automated plagiarism check alongside Gemini evaluation
+  const snippet = validationResult.fileMetadata?.extractedSnippet || "";
+  const plagiarismResult = await runPlagiarismScan({
+    text: `${data.paperTitle}\n${data.abstract}\n${snippet}`,
+    title: data.paperTitle,
+    author: data.authorName,
+  });
+
   // Step 4: Update Supabase database insert call on 'papers' table
-  // Include pdf_url (and file_url) along with AI review output and abstract details
+  // Include pdf_url (and file_url), plagiarism_score, flagged_urls along with AI review output and abstract details
   const aiSummaryBlock = `\n\n--- AI Review Audit ---\nScore: ${validationResult.overallScore}/100 | Status: ${validationResult.status}\n${validationResult.summaryMessage}`;
-  const combinedAbstract = `${data.abstract.trim()}${aiSummaryBlock}`;
+  const plagiarismBlock = `\n\n--- Originality & Academic Integrity Report ---\nSimilarity: ${plagiarismResult.similarityScore}% | Originality: ${plagiarismResult.originalityScore}% (${plagiarismResult.status})\n${plagiarismResult.summary}${plagiarismResult.flaggedUrls.length > 0 ? `\nFlagged Sources:\n` + plagiarismResult.flaggedUrls.map((u) => `* ${u}`).join("\n") : ""}`;
+  const combinedAbstract = `${data.abstract.trim()}${aiSummaryBlock}${plagiarismBlock}`;
 
   const insertPayload: Record<string, any> = {
     author_name: data.authorName.trim(),
@@ -194,6 +205,9 @@ export async function submitPaperHandler(
     status: "Under Review",
     pdf_url: pdfUrl,
     file_url: pdfUrl,
+    plagiarism_score: plagiarismResult.similarityScore,
+    originality_score: plagiarismResult.originalityScore,
+    flagged_urls: plagiarismResult.flaggedUrls,
   };
 
   let { data: insertedPaper, error: dbError } = await supabase
@@ -202,10 +216,16 @@ export async function submitPaperHandler(
     .select()
     .single();
 
-  // If column 'pdf_url' is not found in schema cache, retry without 'pdf_url' key
-  if (dbError && dbError.message?.includes("pdf_url")) {
-    console.warn("Retrying database insert without 'pdf_url' column due to schema cache: ", dbError.message);
-    delete insertPayload["pdf_url"];
+  // If column 'pdf_url' or plagiarism columns are not found in schema cache, retry iteratively
+  const optionalColumns = ["pdf_url", "plagiarism_score", "originality_score", "flagged_urls"];
+  while (dbError && optionalColumns.some((col) => dbError?.message?.includes(col))) {
+    for (const col of optionalColumns) {
+      if (dbError.message?.includes(col)) {
+        console.warn(`Retrying database insert without missing schema cache column '${col}':`, dbError.message);
+        delete insertPayload[col];
+      }
+    }
+
     const retry = await supabase
       .from("papers")
       .insert([insertPayload])
@@ -225,6 +245,9 @@ export async function submitPaperHandler(
     ...(insertedPaper as PaperRecord),
     pdf_url: (insertedPaper as any).pdf_url || (insertedPaper as any).file_url || pdfUrl,
     file_url: (insertedPaper as any).file_url || pdfUrl,
+    plagiarism_score: (insertedPaper as any).plagiarism_score ?? plagiarismResult.similarityScore,
+    originality_score: (insertedPaper as any).originality_score ?? plagiarismResult.originalityScore,
+    flagged_urls: (insertedPaper as any).flagged_urls ?? plagiarismResult.flaggedUrls,
   };
 
   validationResult.fileSaved = true;
@@ -238,6 +261,7 @@ export async function submitPaperHandler(
     pdfUrl,
     storagePath,
     validationResult,
+    plagiarismResult,
   };
 }
 

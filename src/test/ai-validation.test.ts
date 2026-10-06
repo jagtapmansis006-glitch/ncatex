@@ -12,6 +12,10 @@ import {
   triageAdminSubmissionHandler,
 } from "../server/ai-validation-functions";
 import { supabase } from "../lib/supabase";
+import {
+  runPlagiarismScan,
+  runLocalAcademicPlagiarismScan,
+} from "../services/ai-validation/plagiarism-scanner";
 
 const SAMPLE_COMPLIANT_MANUSCRIPT_PDF =
   `%PDF-1.4
@@ -325,6 +329,33 @@ trailer
       expect(data.result.scores.technicalDepth).toBeGreaterThan(0);
     });
 
+    it("handles admin triage endpoint POST /api/admin/triage-submission via SSE streaming", async () => {
+      const req = new Request("http://localhost:3000/api/admin/triage-submission", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          paperTitle: "Adaptive Neural Compression on RISC-V",
+          authorName: "Neha Sharma",
+          track: "VLSI & Embedded Systems",
+          abstract:
+            "A hardware-software co-designed neural compression engine running on open-source RISC-V cores. Evaluated on hardware emulation with significant throughput gains.",
+        }),
+      });
+
+      const res = await handleAiValidationRequest(req);
+      expect(res).not.toBeNull();
+      expect(res?.status).toBe(200);
+      expect(res?.headers.get("content-type")).toContain("text/event-stream");
+
+      const text = await res?.text();
+      expect(text).toContain("event: progress");
+      expect(text).toContain("event: complete");
+      expect(text).toContain('"success":true');
+    });
+
     it("returns null for unrelated routes to let other handlers proceed", async () => {
       const req = new Request("http://localhost:3000/some-other-endpoint", { method: "GET" });
       const res = await handleAiValidationRequest(req);
@@ -416,6 +447,16 @@ trailer
       expect(result.paper).toBeDefined();
       expect(result.paper.pdf_url || result.paper.file_url).toBe(result.pdfUrl);
 
+      // Verify that automated plagiarism scan ran alongside submission
+      expect(result.plagiarismResult).toBeDefined();
+      expect(typeof result.plagiarismResult.similarityScore).toBe("number");
+      expect(typeof result.plagiarismResult.originalityScore).toBe("number");
+      expect(result.plagiarismResult.originalityScore).toBe(
+        100 - result.plagiarismResult.similarityScore,
+      );
+      expect(Array.isArray(result.plagiarismResult.flaggedUrls)).toBe(true);
+      expect(result.paper.abstract).toContain("--- Originality & Academic Integrity Report ---");
+
       // Clean up test records
       if (result.paper.id) {
         await supabase.from("papers").delete().eq("id", result.paper.id);
@@ -436,6 +477,68 @@ trailer
           buffer: Buffer.from(""),
         }),
       ).rejects.toThrow("Manuscript file buffer is empty or missing");
+    });
+  });
+
+  describe("Plagiarism API & Academic Integrity Module", () => {
+    it("executes local academic plagiarism scan and returns structured metrics", () => {
+      const scan = runLocalAcademicPlagiarismScan({
+        title: "FPGA Accelerated Spiking Neural Networks",
+        text: "We present a neuromorphic systolic array targeting edge inferencing with low power dissipation and async event processing.",
+      });
+
+      expect(scan).toBeDefined();
+      expect(scan.similarityScore).toBeGreaterThanOrEqual(0);
+      expect(scan.similarityScore).toBeLessThanOrEqual(100);
+      expect(scan.originalityScore).toBe(100 - scan.similarityScore);
+      expect(["CLEAN", "MODERATE", "HIGH"]).toContain(scan.status);
+      expect(Array.isArray(scan.flaggedUrls)).toBe(true);
+      expect(scan.summary).toContain("Academic integrity scan completed");
+    });
+
+    it("flags duplicate verbatim text with HIGH similarity status (>25%)", () => {
+      const scan = runLocalAcademicPlagiarismScan({
+        title: "Historical Charter Analysis",
+        text: "We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable rights.",
+      });
+
+      expect(scan.similarityScore).toBeGreaterThan(25);
+      expect(scan.status).toBe("HIGH");
+      expect(scan.flaggedUrls.length).toBeGreaterThan(0);
+      expect(scan.flaggedUrls[0]).toContain("archives.gov");
+    });
+
+    it("falls back gracefully when Copyscape credentials are not present or invalid", async () => {
+      const result = await runPlagiarismScan({
+        title: "Distributed Edge Computing Protocol",
+        text: "This research paper evaluates consensus protocols in edge IoT mesh networks with minimal communication overhead.",
+      });
+
+      expect(result).toBeDefined();
+      expect(result.similarityScore).toBeDefined();
+      expect(result.originalityScore).toBe(100 - result.similarityScore);
+      expect(result.summary.length).toBeGreaterThan(0);
+    });
+
+    it("admin triage synthesizes plagiarism metrics into originalityReport", async () => {
+      const triage = await adminReviewTriageService.triageSubmission({
+        paperTitle: "Deep Neural Accelerators on Heterogeneous FPGA",
+        abstract: "Mixed-precision systolic arrays for edge deep learning inference.",
+        plagiarismMetrics: {
+          similarityScore: 18,
+          originalityScore: 82,
+          matchCount: 1,
+          flaggedUrls: ["https://ieeexplore.ieee.org/document/9412356"],
+        },
+      });
+
+      expect(triage.originalityReport).toBeDefined();
+      expect(triage.originalityReport?.similarityScore).toBe(18);
+      expect(triage.originalityReport?.originalityScore).toBe(82);
+      expect(triage.originalityReport?.status).toBe("MODERATE");
+      expect(triage.originalityReport?.flaggedUrls).toContain(
+        "https://ieeexplore.ieee.org/document/9412356",
+      );
     });
   });
 });

@@ -1,8 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 
-export const GEMINI_MODEL = "gemini-3.8-flash";
+export const GEMINI_MODEL = "gemini-2.5-flash";
 export const FALLBACK_MODELS = [
-  "gemini-3-flash-preview",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-3.8-flash",
   "gemini-flash-latest",
 ] as const;
 
@@ -48,7 +51,7 @@ export function getGeminiClient(customKey?: string): GoogleGenAI | null {
 
 /**
  * Helper to execute content generation with automatic model migration and resilience fallback
- * across gemini-3.8-flash and gemini-3-flash-preview.
+ * across gemini-2.5-flash and compatible models.
  */
 export async function generateContentWithFallback(
   gemini: GoogleGenAI,
@@ -67,6 +70,22 @@ export async function generateContentWithFallback(
     } catch (err: unknown) {
       lastError = err;
       const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+
+      // If model does not support thinkingConfig, strip it and retry immediately on same model
+      if (errMsg.includes("thinking") && params.config?.thinkingConfig) {
+        try {
+          const configWithoutThinking = { ...params.config };
+          delete configWithoutThinking.thinkingConfig;
+          return await gemini.models.generateContent({
+            ...params,
+            model,
+            config: configWithoutThinking,
+          });
+        } catch {
+          // Continue to next model fallback
+        }
+      }
+
       // If error indicates model is retired, not found, or temporary spike 503, try next compatible model
       if (
         errMsg.includes("not found") ||
@@ -77,6 +96,61 @@ export async function generateContentWithFallback(
         errMsg.includes("unavailable")
       ) {
         console.warn(`Model ${model} returned error (${errMsg.slice(0, 80)}), attempting fallback model...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Helper to execute streaming content generation with automatic model migration and resilience fallback.
+ */
+export async function generateContentStreamWithFallback(
+  gemini: GoogleGenAI,
+  params: Parameters<GoogleGenAI["models"]["generateContentStream"]>[0],
+) {
+  const primaryModel = params.model || GEMINI_MODEL;
+  const modelsToTry = [primaryModel, ...FALLBACK_MODELS.filter((m) => m !== primaryModel)];
+
+  let lastError: unknown = null;
+  for (const model of modelsToTry) {
+    try {
+      return await gemini.models.generateContentStream({
+        ...params,
+        model,
+      });
+    } catch (err: unknown) {
+      lastError = err;
+      const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+
+      // If model does not support thinkingConfig, strip it and retry immediately on same model
+      if (errMsg.includes("thinking") && params.config?.thinkingConfig) {
+        try {
+          const configWithoutThinking = { ...params.config };
+          delete configWithoutThinking.thinkingConfig;
+          return await gemini.models.generateContentStream({
+            ...params,
+            model,
+            config: configWithoutThinking,
+          });
+        } catch {
+          // Continue to next model fallback
+        }
+      }
+
+      // If error indicates model is retired, not found, or temporary spike 503, try next compatible model
+      if (
+        errMsg.includes("not found") ||
+        errMsg.includes("no longer available") ||
+        errMsg.includes("404") ||
+        errMsg.includes("503") ||
+        errMsg.includes("high demand") ||
+        errMsg.includes("unavailable")
+      ) {
+        console.warn(`Streaming model ${model} returned error (${errMsg.slice(0, 80)}), attempting fallback model...`);
         continue;
       }
       throw err;

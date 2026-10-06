@@ -56,8 +56,7 @@ import {
   Pie,
 } from "recharts";
 import { supabase, type PaperRecord } from "@/lib/supabase";
-import { ThemeToggle } from "@/context/ThemeContext";
-import { triageAdminSubmission } from "@/lib/ai-validation-client";
+import { triageAdminSubmission, streamAdminTriageSubmission } from "@/lib/ai-validation-client";
 import type { AdminTriageResult } from "@/services/ai-validation/types";
 import { AdminSidebar, type AdminTab } from "@/components/admin/AdminSidebar";
 import { AdminCharts } from "@/components/admin/AdminCharts";
@@ -229,6 +228,9 @@ function AdminControlCenter() {
   const [triageMap, setTriageMap] = useState<Record<string, AdminTriageResult>>({});
   const [triageLoading, setTriageLoading] = useState(false);
   const [triageError, setTriageError] = useState<string | null>(null);
+  const [streamProgressMessage, setStreamProgressMessage] = useState<string>("");
+  const [streamTokens, setStreamTokens] = useState<string>("");
+  const [streamLatencySeconds, setStreamLatencySeconds] = useState<number>(0);
 
   // Reviewer and Scoring State
   const [reviewers, setReviewers] = useState<Reviewer[]>(INITIAL_REVIEWERS);
@@ -340,50 +342,95 @@ function AdminControlCenter() {
     }
   };
 
+  // Executes real-time streaming AI triage evaluation with latency tracking & retry capabilities
+  const executeTriage = async (paper: PaperRecord, forceRefresh = false) => {
+    const paperId = paper.id;
+    if (!forceRefresh && triageMap[paperId]) return;
+
+    setTriageLoading(true);
+    setTriageError(null);
+    setStreamTokens("");
+    setStreamProgressMessage("Connecting to Gemini 2.5 Flash low-latency stream...");
+    setStreamLatencySeconds(0);
+
+    const startTime = Date.now();
+    const timerInterval = setInterval(() => {
+      setStreamLatencySeconds(Number(((Date.now() - startTime) / 1000).toFixed(1)));
+    }, 100);
+
+    try {
+      const response = await streamAdminTriageSubmission(
+        {
+          id: paper.id,
+          paper_title: paper.paper_title,
+          author_name: paper.author_name,
+          department: paper.department,
+          track: paper.track,
+          abstract: paper.abstract,
+          plagiarismMetrics:
+            paper.plagiarism_score !== undefined && paper.plagiarism_score !== null
+              ? {
+                  similarityScore: Number(paper.plagiarism_score),
+                  originalityScore: Number(
+                    paper.originality_score ?? (100 - Number(paper.plagiarism_score)),
+                  ),
+                  matchCount: Array.isArray(paper.flagged_urls) ? paper.flagged_urls.length : 0,
+                  flaggedUrls: Array.isArray(paper.flagged_urls) ? paper.flagged_urls : [],
+                }
+              : undefined,
+        },
+        {
+          onProgress: (p) => {
+            setStreamProgressMessage(p.message);
+          },
+          onToken: (tok) => {
+            setStreamTokens((prev) => prev + tok.token);
+          },
+          onComplete: (completed) => {
+            if (completed.result) {
+              setTriageMap((prev) => ({
+                ...prev,
+                [paperId]: completed.result,
+              }));
+            }
+          },
+          onError: (err) => {
+            setTriageError(err.message || "Failed to load AI review triage assessment.");
+          },
+        },
+        {
+          timeoutMs: 25000,
+          maxRetries: 2,
+        },
+      );
+
+      if (response.result) {
+        setTriageMap((prev) => ({
+          ...prev,
+          [paperId]: response.result,
+        }));
+      }
+    } catch (err) {
+      setTriageError(err instanceof Error ? err.message : "Failed to load AI review triage assessment.");
+    } finally {
+      clearInterval(timerInterval);
+      setTriageLoading(false);
+    }
+  };
+
   // Automatically fetch AI triage evaluation when a report dossier is opened
   useEffect(() => {
     if (!selectedDossier) {
       setTriageLoading(false);
       setTriageError(null);
+      setStreamTokens("");
+      setStreamProgressMessage("");
       return;
     }
 
-    const paperId = selectedDossier.id;
-    if (triageMap[paperId]) return;
-
-    let isMountedLocal = true;
-    const fetchTriage = async () => {
-      setTriageLoading(true);
-      setTriageError(null);
-      try {
-        const response = await triageAdminSubmission({
-          id: selectedDossier.id,
-          paper_title: selectedDossier.paper_title,
-          author_name: selectedDossier.author_name,
-          department: selectedDossier.department,
-          track: selectedDossier.track,
-          abstract: selectedDossier.abstract,
-        });
-
-        if (isMountedLocal && response.result) {
-          setTriageMap((prev) => ({
-            ...prev,
-            [paperId]: response.result,
-          }));
-        }
-      } catch (err) {
-        if (isMountedLocal) {
-          setTriageError(err instanceof Error ? err.message : "Failed to load AI review triage assessment.");
-        }
-      } finally {
-        if (isMountedLocal) setTriageLoading(false);
-      }
-    };
-
-    fetchTriage();
-    return () => {
-      isMountedLocal = false;
-    };
+    if (!triageMap[selectedDossier.id]) {
+      executeTriage(selectedDossier);
+    }
   }, [selectedDossier?.id]);
 
   const copyToClipboard = (text: string) => {
@@ -865,21 +912,39 @@ function AdminControlCenter() {
                                 </span>
                               </td>
 
-                              {/* Status Chip */}
+                              {/* Status Chip & Originality Status Badge */}
                               <td className="py-3.5 px-4">
-                                <span
-                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                                    paper.status === "Accepted"
-                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
-                                      : paper.status === "Revision Required" || paper.status === "Revision Needed"
-                                        ? "bg-indigo-50 text-indigo-700 border border-indigo-300 dark:bg-indigo-500/15 dark:border-indigo-500/30 dark:text-indigo-300"
-                                        : paper.status === "Rejected"
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                                      paper.status === "Accepted"
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
+                                        : paper.status === "Revision Required" || paper.status === "Revision Needed"
+                                          ? "bg-indigo-50 text-indigo-700 border border-indigo-300 dark:bg-indigo-500/15 dark:border-indigo-500/30 dark:text-indigo-300"
+                                          : paper.status === "Rejected"
+                                            ? "bg-rose-50 text-rose-700 border border-rose-300 dark:bg-rose-500/15 dark:border-rose-500/30 dark:text-rose-300"
+                                            : "bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
+                                    }`}
+                                  >
+                                    {paper.status || "Under Review"}
+                                  </span>
+
+                                  {paper.plagiarism_score !== undefined && paper.plagiarism_score !== null && (
+                                    <span
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold font-mono ${
+                                        Number(paper.plagiarism_score) > 25
                                           ? "bg-rose-50 text-rose-700 border border-rose-300 dark:bg-rose-500/15 dark:border-rose-500/30 dark:text-rose-300"
-                                          : "bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
-                                  }`}
-                                >
-                                  {paper.status || "Under Review"}
-                                </span>
+                                          : Number(paper.plagiarism_score) >= 10
+                                            ? "bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
+                                            : "bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
+                                      }`}
+                                      title={`Originality Scan: ${paper.plagiarism_score}% match`}
+                                    >
+                                      <ShieldCheck size={10} />
+                                      {paper.plagiarism_score}% match
+                                    </span>
+                                  )}
+                                </div>
                               </td>
 
                               {/* Date */}
@@ -1081,26 +1146,221 @@ function AdminControlCenter() {
 
               <div className="p-6 overflow-y-auto space-y-4">
                 {triageLoading ? (
-                  <div className="py-12 text-center text-slate-500 dark:text-slate-400 space-y-2">
-                    <RefreshCw size={24} className="animate-spin mx-auto text-teal-500" />
-                    <p className="font-medium">Evaluating manuscript with Gemini 2.5 Flash...</p>
+                  <div className="space-y-4">
+                    {/* Live Progress Header with Latency Counter */}
+                    <div className="p-3 rounded-2xl border border-teal-500/30 bg-teal-500/10 flex items-center justify-between text-teal-900 dark:text-teal-200">
+                      <div className="flex items-center gap-2.5">
+                        <RefreshCw size={15} className="animate-spin text-teal-500 shrink-0" />
+                        <div>
+                          <p className="font-semibold text-xs">
+                            {streamProgressMessage || "Evaluating manuscript with Gemini 2.5 Flash..."}
+                          </p>
+                          <p className="text-[10px] text-teal-600 dark:text-teal-400">
+                            Thinking disabled (0s TTFT) • GenAI Files API context optimization
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-mono font-bold text-[11px] bg-white/40 dark:bg-black/30 border border-teal-500/20 px-2.5 py-1 rounded-xl text-teal-800 dark:text-teal-300">
+                        {streamLatencySeconds.toFixed(1)}s
+                      </span>
+                    </div>
+
+                    {/* Live Token Streaming Output */}
+                    {streamTokens ? (
+                      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-900 text-teal-300 p-4 font-mono text-[11px] space-y-2 shadow-inner">
+                        <div className="flex items-center justify-between text-[10px] text-teal-400 border-b border-teal-500/20 pb-2">
+                          <span className="flex items-center gap-1.5 font-bold">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                            Live SSE Token Stream
+                          </span>
+                          <span className="text-slate-400 font-sans">
+                            Rendering tokens in real time
+                          </span>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed text-slate-200 break-words font-mono text-[11px]">
+                          {streamTokens}
+                          <span className="inline-block w-1.5 h-3.5 bg-teal-400 animate-pulse ml-0.5" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center text-slate-500 dark:text-slate-400 space-y-3">
+                        <div className="w-48 mx-auto bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-teal-500 h-full animate-pulse w-3/4 rounded-full" />
+                        </div>
+                        <p className="text-[11px]">
+                          Connecting low-latency stream and preparing document payload via Files API...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : triageError ? (
+                  <div className="p-4 rounded-2xl border border-rose-300 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-300 space-y-3">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <AlertCircle size={16} /> Evaluation Notice
+                    </div>
+                    <p className="text-[11px] leading-relaxed">{triageError}</p>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => executeTriage(selectedDossier, true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-[11px] transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <RefreshCw size={12} /> Retry Evaluation (Backoff)
+                      </button>
+                    </div>
                   </div>
                 ) : triageMap[selectedDossier.id] ? (() => {
                   const triage = triageMap[selectedDossier.id]!;
+                  const origReport = triage.originalityReport;
+                  const similarity =
+                    origReport?.similarityScore ??
+                    (selectedDossier.plagiarism_score !== undefined && selectedDossier.plagiarism_score !== null
+                      ? Number(selectedDossier.plagiarism_score)
+                      : 0);
+                  const originality =
+                    origReport?.originalityScore ??
+                    (selectedDossier.originality_score !== undefined && selectedDossier.originality_score !== null
+                      ? Number(selectedDossier.originality_score)
+                      : 100 - similarity);
+                  const flaggedUrls =
+                    origReport?.flaggedUrls ??
+                    (Array.isArray(selectedDossier.flagged_urls) ? selectedDossier.flagged_urls : []);
+                  const status =
+                    origReport?.status ??
+                    (similarity > 25 ? "HIGH" : similarity >= 10 ? "MODERATE" : "CLEAN");
+
                   return (
                     <div className="space-y-4">
+                      {/* Overall Recommendation & Assessment */}
                       <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/10 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-teal-900 dark:text-teal-200">
                             Overall Recommendation: {triage.recommendedAction}
                           </span>
-                          <span className="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-teal-800 dark:text-teal-200">
-                            Score: {triage.scores?.overallAssessmentScore ?? 0}/100
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-teal-800 dark:text-teal-200">
+                              Score: {triage.scores?.overallAssessmentScore ?? 0}/100
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => executeTriage(selectedDossier, true)}
+                              title="Re-run evaluation"
+                              className="p-1 rounded hover:bg-white/20 text-teal-700 dark:text-teal-300 transition cursor-pointer"
+                            >
+                              <RefreshCw size={12} />
+                            </button>
+                          </div>
                         </div>
                         <p className="text-[11px] text-teal-700 dark:text-teal-300/90 leading-relaxed">
                           {triage.executiveSummary}
                         </p>
+                      </div>
+
+                      {/* Originality & Academic Integrity Report */}
+                      <div className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[0.03] space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={16} className="text-teal-600 dark:text-teal-400" />
+                            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white">
+                              Originality &amp; Academic Integrity Report
+                            </h4>
+                          </div>
+
+                          {/* Originality Status Badge (<10% Green, 10-25% Yellow, >25% Red) */}
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+                              similarity > 25
+                                ? "bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-500/20 dark:border-rose-500/30 dark:text-rose-300"
+                                : similarity >= 10
+                                  ? "bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:border-amber-500/30 dark:text-amber-300"
+                                  : "bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:border-emerald-500/30 dark:text-emerald-300"
+                            }`}
+                          >
+                            {similarity > 25 ? (
+                              <>
+                                <AlertCircle size={13} className="shrink-0 text-rose-600 dark:text-rose-400" />
+                                <span>High Similarity (&gt;25% Match)</span>
+                              </>
+                            ) : similarity >= 10 ? (
+                              <>
+                                <AlertTriangle size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                                <span>Moderate Similarity (10–25% Match)</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                <span>Original Manuscript (&lt;10% Match)</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Metrics Breakdown Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                          <div className="p-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-black/30">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Similarity Index</span>
+                            <span
+                              className={`text-base font-bold font-mono ${
+                                similarity > 25
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : similarity >= 10
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-emerald-600 dark:text-emerald-400"
+                              }`}
+                            >
+                              {similarity}%
+                            </span>
+                          </div>
+                          <div className="p-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-black/30">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Originality Rating</span>
+                            <span className="text-base font-bold font-mono text-teal-600 dark:text-teal-400">
+                              {originality}%
+                            </span>
+                          </div>
+                          <div className="p-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-black/30 col-span-2 sm:col-span-1">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Flagged Sources</span>
+                            <span className="text-base font-bold font-mono text-slate-700 dark:text-slate-200">
+                              {flaggedUrls.length} source{flaggedUrls.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Integrity Summary Synthesis */}
+                        {origReport?.integritySummary && (
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-white/70 dark:bg-black/20 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5">
+                            {origReport.integritySummary}
+                          </p>
+                        )}
+
+                        {/* Flagged Links List */}
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                            Flagged Source References ({flaggedUrls.length}):
+                          </span>
+                          {flaggedUrls.length > 0 ? (
+                            <ul className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                              {flaggedUrls.map((url, uIdx) => (
+                                <li key={uIdx} className="flex items-center gap-1.5 text-[11px]">
+                                  <ExternalLink size={12} className="text-teal-500 shrink-0" />
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:underline truncate"
+                                    title={url}
+                                  >
+                                    {url}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                              <CheckCircle2 size={13} className="shrink-0" />
+                              <span>No external matched URLs flagged. Manuscript satisfies conference originality criteria (&lt;10%).</span>
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       {/* Key Strengths & Weaknesses */}

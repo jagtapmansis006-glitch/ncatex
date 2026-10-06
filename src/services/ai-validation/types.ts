@@ -71,6 +71,14 @@ export interface AdminTriageScores {
   overallAssessmentScore: number; // 0 - 100
 }
 
+export interface OriginalityReport {
+  similarityScore: number; // 0 - 100 percentage match
+  originalityScore: number; // 0 - 100 percentage original
+  status: "CLEAN" | "MODERATE" | "HIGH";
+  flaggedUrls: string[];
+  integritySummary: string;
+}
+
 export interface AdminTriageResult {
   paperId?: string | undefined;
   paperTitle: string;
@@ -93,6 +101,7 @@ export interface AdminTriageResult {
     suggestedReviewerFocus: string[];
     mandatoryRevisionsIfAny: string[];
   };
+  originalityReport?: OriginalityReport | undefined;
   evaluatedAt: string;
 }
 
@@ -114,5 +123,12 @@ export interface AdminTriageInput {
   documentBuffer?: Buffer | Uint8Array | undefined;
   documentFilename?: string | undefined;
   documentMimeType?: string | undefined;
+  fileUrl?: string | undefined;
+  plagiarismMetrics?: {
+    similarityScore: number;
+    originalityScore: number;
+    matchCount: number;
+    flaggedUrls: string[];
+  } | undefined;
   apiKey?: string | undefined;
 }

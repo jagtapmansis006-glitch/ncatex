@@ -52,4 +52,7 @@ export interface PaperRecord {
     | "Rejected";
   file_url?: string | null;
   pdf_url?: string | null;
+  plagiarism_score?: number | null;
+  originality_score?: number | null;
+  flagged_urls?: string[] | string | null;
 }

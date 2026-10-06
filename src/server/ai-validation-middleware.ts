@@ -2,6 +2,7 @@ import { analyzeStudentDocumentHandler, submitPaperHandler } from "./ai-validati
 import { adminReviewTriageService } from "../services/ai-validation/admin-triage";
 import type { AdminTriageInput } from "../services/ai-validation/types";
 import { GEMINI_MODEL, resolveGeminiApiKey } from "../services/ai-validation/gemini-client";
+import { supabase } from "../lib/supabase";
 
 /**
  * Standard HTTP response helper
@@ -102,6 +103,8 @@ export async function handleAiValidationRequest(request: Request): Promise<Respo
   if (
     (pathname === "/api/admin/triage-submission" ||
       pathname === "/api/admin/triage" ||
+      pathname === "/api/admin/triage-stream" ||
+      pathname === "/api/admin/triage/stream" ||
       pathname === "/api/ai/triage-admin-submission") &&
     request.method === "POST"
   ) {
@@ -492,6 +495,8 @@ async function handlePaperSubmissionEndpoint(request: Request): Promise<Response
  */
 async function handleAdminTriageEndpoint(request: Request): Promise<Response> {
   try {
+    const url = new URL(request.url);
+    const pathname = url.pathname.replace(/\/+$/, "");
     const customKey = request.headers.get("X-Gemini-Key") ?? undefined;
     const contentType = request.headers.get("content-type") ?? "";
 
@@ -538,6 +543,12 @@ async function handleAdminTriageEndpoint(request: Request): Promise<Response> {
         author?: string;
         fileBase64?: string;
         filename?: string;
+        plagiarismMetrics?: {
+          similarityScore: number;
+          originalityScore: number;
+          matchCount?: number;
+          flaggedUrls: string[];
+        };
       };
 
       let documentBuffer: Buffer | undefined;
@@ -556,6 +567,12 @@ async function handleAdminTriageEndpoint(request: Request): Promise<Response> {
         documentBuffer,
         documentFilename: body.documentFilename || body.filename,
         documentMimeType: body.documentMimeType,
+        plagiarismMetrics: body.plagiarismMetrics ? {
+          similarityScore: body.plagiarismMetrics.similarityScore,
+          originalityScore: body.plagiarismMetrics.originalityScore,
+          matchCount: body.plagiarismMetrics.matchCount ?? body.plagiarismMetrics.flaggedUrls.length,
+          flaggedUrls: body.plagiarismMetrics.flaggedUrls,
+        } : undefined,
         apiKey: customKey,
       };
     } else {
@@ -576,6 +593,89 @@ async function handleAdminTriageEndpoint(request: Request): Promise<Response> {
         },
         400,
       );
+    }
+
+    // If plagiarism metrics were not explicitly passed in payload, but a paperId is provided,
+    // load previously scanned metrics from Supabase database record
+    if (!triageInput.plagiarismMetrics && triageInput.paperId) {
+      try {
+        const { data: dbPaper } = await supabase
+          .from("papers")
+          .select("plagiarism_score, originality_score, flagged_urls")
+          .eq("id", triageInput.paperId)
+          .maybeSingle();
+
+        if (dbPaper && dbPaper.plagiarism_score !== null && dbPaper.plagiarism_score !== undefined) {
+          const sim = Number(dbPaper.plagiarism_score);
+          const orig = Number(dbPaper.originality_score ?? (100 - sim));
+          const urls = Array.isArray(dbPaper.flagged_urls) ? dbPaper.flagged_urls : [];
+          triageInput.plagiarismMetrics = {
+            similarityScore: sim,
+            originalityScore: orig,
+            matchCount: urls.length,
+            flaggedUrls: urls,
+          };
+        }
+      } catch (dbErr) {
+        // Continue gracefully with heuristic scan
+      }
+    }
+
+    // Check if client requested Server-Sent Events (SSE) streaming
+    const isStreaming =
+      request.headers.get("accept")?.includes("text/event-stream") ||
+      url.searchParams.get("stream") === "true" ||
+      pathname.includes("stream");
+
+    if (isStreaming) {
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const encoder = new TextEncoder();
+
+      const sendEvent = async (event: string, data: unknown) => {
+        try {
+          await writer.write(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Client disconnected
+        }
+      };
+
+      (async () => {
+        try {
+          await sendEvent("progress", {
+            phase: "init",
+            message: "Connected to Gemini 2.5 Flash Triage Engine...",
+          });
+
+          await adminReviewTriageService.triageSubmissionStream(triageInput, async (streamEvent) => {
+            await sendEvent(streamEvent.type, streamEvent.data);
+          });
+        } catch (streamErr) {
+          console.error("Error during admin triage streaming:", streamErr);
+          await sendEvent("error", {
+            error: "Streaming Error",
+            message: streamErr instanceof Error ? streamErr.message : "Triage stream failed",
+          });
+        } finally {
+          try {
+            await writer.close();
+          } catch {
+            // Ignore if closed
+          }
+        }
+      })();
+
+      return new Response(readable, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Gemini-Key",
+        },
+      });
     }
 
     const triageResult = await adminReviewTriageService.triageSubmission(triageInput);

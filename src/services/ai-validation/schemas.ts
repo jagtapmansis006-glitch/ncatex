@@ -200,6 +200,24 @@ export const adminTriageSchema: Schema = {
       },
       required: ["justificationForAction", "suggestedReviewerFocus", "mandatoryRevisionsIfAny"],
     },
+    originalityReport: {
+      type: Type.OBJECT,
+      properties: {
+        similarityScore: { type: Type.INTEGER, description: "Plagiarism match percentage (0-100)" },
+        originalityScore: { type: Type.INTEGER, description: "Originality score percentage (0-100)" },
+        status: { type: Type.STRING, enum: ["CLEAN", "MODERATE", "HIGH"], description: "Risk status based on similarity threshold" },
+        flaggedUrls: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "List of matched public or academic source URLs",
+        },
+        integritySummary: {
+          type: Type.STRING,
+          description: "Dedicated Originality & Integrity Report synthesizing manuscript originality, matched sources, and academic integrity evaluation",
+        },
+      },
+      required: ["similarityScore", "originalityScore", "status", "flaggedUrls", "integritySummary"],
+    },
   },
   required: [
     "condition",
@@ -208,5 +226,6 @@ export const adminTriageSchema: Schema = {
     "scores",
     "analysis",
     "reviewerGuidance",
+    "originalityReport",
   ],
 };
