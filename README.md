@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0b1220,100:2e1a6e&height=250&section=header&text=NCATEX&fontSize=90&fontColor=ffffff&fontAlignY=38&animation=fadeIn&desc=Conference%20Paper%20Submission%20%26%20Peer%20Review%20Platform&descSize=20&descAlignY=62" alt="NCATEX banner" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0b1220,100:2e1a6e&height=250&section=header&text=NCATEX&fontSize=90&fontColor=ffffff&fontAlignY=38&animation=fadeIn&desc=Conference%20Paper%20Submission%20and%20Peer%20Review%20Platform&descSize=20&descAlignY=62" alt="NCATEX banner" />
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=21&duration=3200&pause=900&color=8B7CF6&center=true&vCenter=true&width=780&lines=Submit+research.+Track+it+live.;AI+format+audit+before+you+hit+submit;Role-based+portals+for+authors+%26+reviewers;Five+tracks.+One+frontier." alt="Typing animation" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=21&duration=3200&pause=900&color=8B7CF6&center=true&vCenter=true&width=780&lines=Submit+research.+Track+it+live.;AI+format+audit+before+you+hit+submit;Role-based+portals+for+authors+and+reviewers;Five+tracks.+One+frontier." alt="Typing animation" />
 
 <br/>
 
@@ -15,7 +15,7 @@
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Gemini_AI-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
-![Responsive](https://img.shields.io/badge/Design-Responsive_%7C_Light_%26_Dark-1f2937?style=flat-square)
+![Responsive](https://img.shields.io/badge/Design-Responsive_%7C_Light_and_Dark-1f2937?style=flat-square)
 
 </div>
 
@@ -54,14 +54,31 @@ The login page has **one-click demo access**, so no sign-up is needed.
 
 <div align="center">
 
-<!-- Add screenshots to /assets and keep these filenames, or update the paths -->
-<img src="./assets/hero.png" alt="NCATEX landing page" width="92%" />
+<a href="https://ncatex.vercel.app/">
+  <img src="https://api.microlink.io/?url=https%3A%2F%2Fncatex.vercel.app%2F&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440&viewport.height=900&waitForTimeout=3000" alt="NCATEX landing page" width="92%" />
+</a>
+
+<sub>🏠 <b>Landing page</b> · click to open the live site</sub>
 
 <br/><br/>
 
-| Login Portal | Conference Tracks | Admin Dashboard |
+<a href="https://ncatex.vercel.app/login">
+  <img src="https://api.microlink.io/?url=https%3A%2F%2Fncatex.vercel.app%2Flogin&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440&viewport.height=900&waitForTimeout=3000" alt="NCATEX login portal" width="70%" />
+</a>
+
+<sub>🔐 <b>Role-based login portal</b> · click to try the demo accounts</sub>
+
+</div>
+
+### 🧭 Portals at a Glance
+
+<div align="center">
+
+| 🎓 Author Portal | 🛡️ Admin Portal | 🌐 Public Site |
 |:---:|:---:|:---:|
-| <img src="./assets/login.png" width="260" alt="Login portal" /> | <img src="./assets/tracks.png" width="260" alt="Tracks" /> | <img src="./assets/admin.png" width="260" alt="Admin dashboard" /> |
+| Submit manuscripts | Manage all submissions | Tracks, dates & FAQ |
+| Track review status | AI-assisted triage | Live announcements |
+| AI format audit | Role-based access | Light / dark theme |
 
 </div>
 
